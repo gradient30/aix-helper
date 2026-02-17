@@ -28,9 +28,21 @@ const TRANSPORT_TYPES = [
 const APP_OPTIONS = ["claude", "codex", "gemini", "opencode"] as const;
 
 const MCP_TEMPLATES = [
+  // Anthropic 官方
   { name: "mcp-fetch", transport_type: "stdio", command: "npx", args: ["-y", "@anthropics/mcp-fetch"] },
   { name: "mcp-filesystem", transport_type: "stdio", command: "npx", args: ["-y", "@anthropics/mcp-filesystem", "/path"] },
   { name: "mcp-memory", transport_type: "stdio", command: "npx", args: ["-y", "@anthropics/mcp-memory"] },
+  // 常用热门 MCP (GitHub Star 排名靠前)
+  { name: "playwright", transport_type: "stdio", command: "npx", args: ["@playwright/mcp@latest"] },
+  { name: "context7", transport_type: "stdio", command: "npx", args: ["-y", "@upstash/context7-mcp@latest"] },
+  { name: "sequential-thinking", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-sequential-thinking"] },
+  { name: "github", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-github"] },
+  { name: "puppeteer", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-puppeteer"] },
+  { name: "brave-search", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-brave-search"] },
+  { name: "everything", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-everything"] },
+  { name: "sqlite", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/path/to/db"] },
+  { name: "postgres", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"] },
+  { name: "slack", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-slack"] },
 ];
 
 interface EnvEntry { key: string; value: string }
