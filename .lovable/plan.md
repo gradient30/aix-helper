@@ -1,157 +1,146 @@
 
-
-# 添加「环境配置与常用技巧帮助」独立页面
+# 添加「AI 前沿技术概览」图文页面
 
 ## 概述
 
-新建一个独立的「环境配置与常用技巧」页面（`/setup-guide`），为用户提供 Anthropic Claude Code、OpenAI Codex CLI、Google Gemini CLI 三大工具的完整环境搭建指南、常用技巧、最佳实践和常见问题解决方案。页面采用与现有 `/cli-guide` 和 `/skills-guide` 一致的 Tab + 分组手风琴 + 搜索过滤交互模式。
+新建一个独立的「AI 前沿技术概览」页面（`/ai-glossary`），以结构化、图文并茂的方式介绍 Agent、Sub-Agent、Agent Team、MCP Servers、Skills、ACP、LSP、RAG、Workflow、Prompt Engineering 等 10 大 AI 前沿技术概念。页面采用与现有指南页面一致的 Tab 分组 + 手风琴展开 + 搜索过滤交互模式。
 
 ## 页面结构设计
 
 ```text
 +----------------------------------------------------------+
-| 环境配置与常用技巧                                         |
-| Anthropic / Codex / Gemini CLI 环境搭建与最佳实践指南       |
+| AI 前沿技术概览                                            |
+| 大模型相关核心概念与前沿技术全面解析                         |
 +----------------------------------------------------------+
-| [Claude Code]  [Codex CLI]  [Gemini CLI]                  |
+| [Agent 体系]  [协议与服务]  [技术方法]                      |
 +----------------------------------------------------------+
-| 搜索配置说明...           [全部展开] [全部折叠]             |
-| 显示 X / 共 Y 条                      [官方文档 ↗]        |
+| 搜索技术概念...          [全部展开] [全部折叠]              |
+| 显示 X / 共 Y 条                                          |
 +----------------------------------------------------------+
-| > 前置条件（3 条）                                         |
-|   Node.js >= 18 / Python >= 3.8 / npm 等系统要求           |
-| > 安装步骤（4 条）                                         |
-|   npm install / pip install / 包管理器安装                  |
-| > API 密钥与认证（3 条）                                   |
-|   密钥获取 → 环境变量设置 → 认证验证                        |
-| > 环境变量配置（3 条）                                     |
-|   Windows / macOS / Linux 分操作系统示例                    |
-| > 初始化验证（2 条）                                       |
-|   验证命令 + 预期输出示例                                   |
-| > 核心命令示例（5 条）                                     |
-|   最常用命令及参数用法                                      |
-| > 典型应用场景（4 条）                                     |
-|   模型调用 / 代码审查 / 批量处理 / 成本管理                  |
-| > 性能优化（3 条）                                         |
-|   批量处理 / 并行调用 / 上下文管理                          |
-| > 问题排查（4 条）                                         |
-|   常见错误码 / 网络问题 / 权限问题 / 日志查看                |
-| > 常见问题 FAQ（5 条）                                     |
-|   精选高频问题与解答                                        |
+| > Agent（智能代理）                                        |
+|   定义与介绍 | 作用/功能 | 应用场景 | 相互关系              |
+| > Sub-Agent（子代理）                                      |
+|   ...                                                     |
+| > Agent Team（代理团队）                                   |
+|   ...                                                     |
 +----------------------------------------------------------+
 ```
 
-每个条目包含：
-- 标题（带 Badge 类型标注：前置条件 / 命令 / 配置 / 技巧 / FAQ）
-- 中文详细描述
-- 可复制的代码块（命令行 / 配置文件 / 环境变量）
-- 可选的多操作系统对照表格
+### 三个 Tab 分组
 
-## 内容规划（基于官方文档）
+| Tab | 包含概念 |
+|-----|---------|
+| Agent 体系 | Agent、Sub-Agent、Agent Team、Skills |
+| 协议与服务 | MCP Servers、ACP、LSP |
+| 技术方法 | RAG、Workflow、Prompt Engineering |
 
-### Claude Code 环境配置
+### 每个概念的条目结构
 
-| 分组 | 条目 |
-|------|------|
-| 前置条件 | Node.js >= 18、Git（推荐）、操作系统要求（macOS / Linux / Windows via WSL2） |
-| 安装步骤 | `npm install -g @anthropic-ai/claude-code`、npx 方式运行、版本更新 |
-| API 密钥与认证 | Anthropic Console 获取密钥、`ANTHROPIC_API_KEY` 设置、OAuth 登录（`/login`）、Max Plan 认证 |
-| 环境变量配置 | Windows / macOS / Linux 三系统环境变量设置示例、`.bashrc` / `.zshrc` / PowerShell 配置 |
-| 初始化验证 | `claude --version`、`claude` 启动交互模式验证 |
-| 核心命令示例 | 交互模式、一次性查询 `claude "query"`、管道模式 `claude -p`、继续对话 `--continue`、恢复会话 `--resume` |
-| 典型应用场景 | 代码审查（`/review`）、项目初始化（`/init`）、上下文压缩（`/compact`）、多模型切换 |
-| 性能优化 | 上下文窗口管理、Compact 策略、`/add-dir` 多目录加载、并行子代理 |
-| 问题排查 | 认证失败排查、Node.js 版本不兼容、网络代理配置、`/doctor` 诊断 |
-| 常见问题 FAQ | 支持哪些模型？费用如何计算？如何在企业代理后使用？如何重置配置？如何查看日志？ |
+每个概念展开后包含 4 个子节：
+- **定义与介绍** - 核心概念、原理（badge: "concept"）
+- **作用/功能** - 解决什么问题、提供什么能力（badge: "function"）
+- **应用场景** - 实际案例和潜在用途（badge: "scenario"）
+- **相互关系** - 与其他概念的关联、协同、依赖（badge: "relation"）
 
-### Codex CLI 环境配置
+## 内容大纲
 
-| 分组 | 条目 |
-|------|------|
-| 前置条件 | Node.js >= 22、Git、macOS / Linux（Windows 暂不原生支持，需 WSL2）、沙箱依赖（macOS: Docker；Linux: bubblewrap） |
-| 安装步骤 | `npm install -g @openai/codex`、首次运行配置向导 |
-| API 密钥与认证 | OpenAI API Key 获取、`OPENAI_API_KEY` 设置、其他提供者密钥（`GEMINI_API_KEY` 等） |
-| 环境变量配置 | 三操作系统环境变量示例、`~/.codex/config.toml` 配置文件 |
-| 初始化验证 | `codex --version`、`codex --help`、简单查询测试 |
-| 核心命令示例 | 交互模式、一次性查询、`--approval-mode` 三种模式、`--model` 选择、`--sandbox` 控制 |
-| 典型应用场景 | Full-auto 模式批量重构、沙箱安全执行、多提供者切换、图片输入分析 |
-| 性能优化 | `--quiet` 精简输出、`config.toml` 预配置默认值、合理的审批模式选择 |
-| 问题排查 | Docker 沙箱启动失败、API 配额超限、模型不可用、权限问题 |
-| 常见问题 FAQ | 支持哪些 LLM 提供者？沙箱如何工作？如何离线使用？如何自定义指令？ |
+### 1. Agent（智能代理）
+- 定义：基于 LLM 的自主决策实体，具备感知、推理、行动能力
+- 作用：自主完成复杂任务，替代人工多步操作
+- 场景：代码开发助手、客服自动化、数据分析
+- 关系：是 Sub-Agent 和 Agent Team 的基础单元；使用 Skills 扩展能力；通过 MCP/ACP 协议通信
 
-### Gemini CLI 环境配置
+### 2. Sub-Agent（子代理）
+- 定义：由主 Agent 派生的专注型代理，执行特定子任务
+- 作用：任务分解与并行处理，降低单 Agent 复杂度
+- 场景：Claude Code 的 `context: fork`、多文件并行编辑
+- 关系：由 Agent 创建和调度；可组成 Agent Team；通过 Workflow 编排
 
-| 分组 | 条目 |
-|------|------|
-| 前置条件 | Node.js >= 18、npm/npx、Google 账户 |
-| 安装步骤 | `npx https://github.com/anthropics/claude-code` 方式运行、`npm install -g @anthropic-ai/claude-code` 全局安装 --> 修正为 Gemini: `npx https://github.com/google-gemini/gemini-cli` 或 `npm install -g @anthropic-ai/gemini-cli` --> 实际为 `npx https://github.com/google-gemini/gemini-cli` |
-| API 密钥与认证 | Google AI Studio 获取 API Key、`GEMINI_API_KEY` 设置、Google OAuth 登录、Vertex AI 认证 |
-| 环境变量配置 | 三操作系统设置示例、`.gemini/settings.json` 配置 |
-| 初始化验证 | `gemini --version`、`gemini` 启动交互、`/help` 验证 |
-| 核心命令示例 | 交互模式、`--model` 选择、`-p` 非交互模式、`@file` 引用文件、`!command` 执行 Shell |
-| 典型应用场景 | 代码生成与重构、文件分析（`@file`）、检查点管理、多工具集成（MCP） |
-| 性能优化 | `/compress` 压缩上下文、`--sandbox` 沙箱模式、Memory 系统利用 |
-| 问题排查 | OAuth 授权失败、API 配额限制、代理设置、扩展加载错误 |
-| 常见问题 FAQ | 免费额度是多少？如何切换模型？如何使用 MCP？如何管理会话历史？ |
+### 3. Agent Team（代理团队）
+- 定义：多个 Agent 协作的团队架构
+- 作用：复杂任务的分工协作、角色专业化
+- 场景：软件开发团队（架构师+开发者+测试）、研究团队
+- 关系：由多个 Agent/Sub-Agent 组成；通过 ACP 协调；使用 Workflow 定义协作流程
+
+### 4. Skills（智能代理技能）
+- 定义：可复用的能力包，扩展 Agent 的专业领域知识
+- 作用：渐进式披露能力、模块化复用
+- 场景：Claude Code Skills、Codex Skills、Gemini Skills
+- 关系：被 Agent 加载和调用；可通过 MCP Server 提供外部能力
+
+### 5. MCP Servers（模型上下文协议服务器）
+- 定义：Model Context Protocol 的服务端实现
+- 作用：为 Agent 提供标准化的外部工具调用接口
+- 场景：文件系统、数据库查询、浏览器自动化、API 集成
+- 关系：被 Agent 通过 MCP 协议调用；与 ACP 互补；可作为 Skills 的底层能力提供者
+
+### 6. ACP（Agent 通信协议）
+- 定义：Agent Communication Protocol，Agent 间标准化通信协议
+- 作用：实现多 Agent 发现、协商和协作
+- 场景：跨平台 Agent 互操作、Agent 市场
+- 关系：协调 Agent Team 通信；与 MCP 互补（MCP 管工具，ACP 管 Agent 间通信）
+
+### 7. LSP（语言服务协议）
+- 定义：Language Server Protocol 在 AI 场景的扩展应用
+- 作用：为 Agent 提供代码理解能力（补全、跳转、诊断）
+- 场景：AI 编码助手的代码分析、智能重构
+- 关系：增强 Agent 的代码理解能力；被 Skills 利用
+
+### 8. RAG（检索增强生成）
+- 定义：Retrieval-Augmented Generation，检索外部知识增强 LLM 输出
+- 作用：解决 LLM 知识截止和幻觉问题
+- 场景：企业知识库问答、文档检索、实时信息查询
+- 关系：可作为 MCP Server 提供检索服务；增强 Agent 的知识获取能力
+
+### 9. Workflow（工作流）
+- 定义：预定义的任务执行流程编排
+- 作用：将复杂任务拆解为可控的步骤序列
+- 场景：CI/CD 自动化、多步数据处理、审批流程
+- 关系：编排 Agent/Sub-Agent 的执行顺序；可内嵌 Prompt 模板
+
+### 10. Prompt Engineering（提示词工程）
+- 定义：设计和优化 LLM 输入提示的方法论
+- 作用：引导 LLM 产生高质量、可控的输出
+- 场景：CLAUDE.md 系统提示、Few-shot 示例、思维链
+- 关系：是 Skills 内容的编写基础；Workflow 中嵌入 Prompt 模板；Agent 的行为由 Prompt 驱动
 
 ## 文件变更清单
 
 | 文件 | 操作 | 说明 |
 |------|------|------|
-| `src/pages/SetupGuide.tsx` | 新建 | 环境配置与技巧帮助页面（全部数据 + 搜索 + 分组 + 代码复制） |
-| `src/App.tsx` | 修改 | 添加 `/setup-guide` 路由 |
-| `src/components/AppSidebar.tsx` | 修改 | 添加「环境配置」导航项（使用 `Monitor` 图标） |
-| `src/i18n/locales/zh.ts` | 修改 | 添加 `nav.setupGuide` 及页面相关翻译 |
+| `src/pages/AiGlossary.tsx` | 新建 | AI 前沿技术概览页面（含全部数据定义 + 搜索 + 分组） |
+| `src/App.tsx` | 修改 | 添加 `/ai-glossary` 路由 |
+| `src/components/AppSidebar.tsx` | 修改 | 添加「AI 技术」导航项（使用 `Brain` 图标） |
+| `src/i18n/locales/zh.ts` | 修改 | 添加 `nav.aiGlossary` 及页面相关中文翻译 |
 | `src/i18n/locales/en.ts` | 修改 | 添加对应英文翻译 |
 
 ### 无新增依赖
 
-全部使用已有组件（Tabs、Badge、Input、Button、Card、Tooltip、Table）和已有模式。
+全部使用已有组件（Tabs、Badge、Input、Button、Card、Collapsible）。
 
 ## 技术实现
 
 ### 数据结构
 
 ```typescript
-interface SetupGuideItem {
-  title: string;
-  description: string;
-  code?: string;          // 可复制代码块
-  badge?: "prereq" | "install" | "config" | "verify" | "command" | "scenario" | "optimize" | "debug" | "faq";
-  table?: { headers: string[]; rows: string[][] };
+interface GlossarySection {
+  title: string;           // 子节标题（定义与介绍 / 作用 / 场景 / 关系）
+  content: string;         // 详细内容
+  badge?: "concept" | "function" | "scenario" | "relation";
 }
 
-interface SetupGuideGroup {
-  category: string;
+interface GlossaryConcept {
+  id: string;              // 唯一标识
+  title: string;           // 概念名称
+  subtitle: string;        // 中文副标题
   icon: LucideIcon;
-  items: SetupGuideItem[];
+  sections: GlossarySection[];
 }
 
-interface SetupGuideTool {
+interface GlossaryTab {
   id: string;
   name: string;
-  officialUrl: string;
-  groups: SetupGuideGroup[];
-}
-```
-
-### 一键复制功能
-
-每个代码块右上角增加复制按钮，使用 `navigator.clipboard.writeText()` 实现，复制成功后短暂显示"已复制"反馈：
-
-```typescript
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <Button variant="ghost" size="icon" onClick={handleCopy}>
-      {copied ? <Check /> : <Copy />}
-    </Button>
-  );
+  concepts: GlossaryConcept[];
 }
 ```
 
@@ -159,25 +148,16 @@ function CopyButton({ text }: { text: string }) {
 
 | Badge | 含义 | 样式 |
 |-------|------|------|
-| prereq | 前置条件 | 蓝色调 |
-| install | 安装步骤 | 绿色调 |
-| config | 配置项 | 橙色调 |
-| verify | 验证命令 | 紫色调 |
-| command | 核心命令 | 主题色 |
-| scenario | 应用场景 | 强调色 |
-| optimize | 性能优化 | 成功色 |
-| debug | 问题排查 | 警告色 |
-| faq | 常见问题 | 信息色 |
-
-### 搜索功能
-
-与 `/cli-guide` 一致：实时过滤标题和描述，自动展开匹配分组，显示匹配/总数统计。
+| concept | 定义与介绍 | 蓝色调 |
+| function | 作用/功能 | 绿色调 |
+| scenario | 应用场景 | 橙色调 |
+| relation | 相互关系 | 紫色调 |
 
 ### 视觉设计
 
-- 代码块使用 `font-mono` + 暗色背景 + 右上角复制按钮
-- 多操作系统配置使用 Table 组件展示对照表
-- Badge 区分条目类型
+- 与现有 `/cli-guide`、`/skills-guide`、`/setup-guide` 页面风格完全一致
+- 每个概念使用 Collapsible 展开/折叠
+- 概念内部四个子节使用卡片式布局，带 Badge 和图标
+- 关系说明中引用其他概念时使用高亮标注
+- 搜索实时过滤标题和内容
 - 支持暗色主题
-- 与现有 `/cli-guide`、`/skills-guide` 页面风格完全一致
-
