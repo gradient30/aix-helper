@@ -1,146 +1,183 @@
 
-# 添加「技能使用帮助」独立页面
+
+# 添加「环境配置与常用技巧帮助」独立页面
 
 ## 概述
 
-新建一个独立的「技能使用帮助」页面（`/skills-guide`），完整收录 Claude Code、Codex CLI、Gemini CLI 三大工具的 Agent Skills 系统详细使用说明与配置手册。页面采用 Tab 切换 + 手风琴分组 + 搜索过滤的交互模式，与现有 `/cli-guide` 页面风格保持一致。
+新建一个独立的「环境配置与常用技巧」页面（`/setup-guide`），为用户提供 Anthropic Claude Code、OpenAI Codex CLI、Google Gemini CLI 三大工具的完整环境搭建指南、常用技巧、最佳实践和常见问题解决方案。页面采用与现有 `/cli-guide` 和 `/skills-guide` 一致的 Tab + 分组手风琴 + 搜索过滤交互模式。
 
-## 内容规划（基于官方文档）
-
-### Claude Code Skills
-
-分为以下模块：
-
-1. **概述** - Skills 是什么、核心优势（复用性、渐进式披露、组合能力）
-2. **快速开始** - 创建第一个 Skill 的完整步骤（创建目录、编写 SKILL.md、测试调用）
-3. **存放位置** - 企业级 / 个人级 / 项目级 / 插件级四种作用域及路径说明
-4. **SKILL.md 结构** - Frontmatter 字段参考表（name、description、disable-model-invocation、allowed-tools、context、agent、model、hooks 等）
-5. **内容类型** - 参考内容 vs 任务内容的区别与编写方式
-6. **调用控制** - 用户调用 vs 模型调用的控制方式（disable-model-invocation、user-invocable）
-7. **参数传递** - $ARGUMENTS、$ARGUMENTS[N]、$N 占位符用法
-8. **高级模式** - 动态上下文注入（!`command`）、子代理执行（context: fork）、权限控制
-9. **预置技能** - 官方预置的 Agent Skills（PowerPoint/Excel/Word/PDF）
-10. **配置模板** - 完整可用的 SKILL.md 模板（含下载功能）
-
-### Codex CLI Skills
-
-1. **概述** - Skills 概念、渐进式披露机制、与开放标准的关系
-2. **快速开始** - 使用 $skill-creator 创建技能、手动创建
-3. **存放位置** - REPO / USER / ADMIN / SYSTEM 四级作用域及路径
-4. **安装技能** - $skill-installer 使用方法
-5. **启用与禁用** - config.toml 中 [[skills.config]] 配置
-6. **调用方式** - 显式调用（/skills、$skill-name）与隐式调用
-7. **可选元数据** - agents/openai.yaml 配置（UI 元数据、策略、工具依赖）
-8. **最佳实践** - 单一职责、指令优先于脚本、明确输入输出
-9. **配置模板** - 完整 SKILL.md + openai.yaml 模板
-
-### Gemini CLI Skills
-
-1. **概述** - Agent Skills 开放标准、与 GEMINI.md 的区别、核心优势
-2. **技能发现层级** - 工作区(.gemini/skills/)、用户(~/.gemini/skills/)、扩展三级
-3. **会话内管理** - /skills list、/skills link、/skills disable、/skills enable、/skills reload
-4. **终端管理** - gemini skills list、gemini skills link、gemini skills install、gemini skills uninstall
-5. **工作机制** - 发现 → 激活 → 确认 → 注入 → 执行的完整流程
-6. **创建自定义技能** - SKILL.md 格式与目录结构
-7. **配置模板** - 完整 SKILL.md 模板
-
-## 页面交互设计
+## 页面结构设计
 
 ```text
 +----------------------------------------------------------+
-| 技能使用帮助                                              |
-| 三大 CLI 工具 Agent Skills 详细使用说明与配置手册          |
+| 环境配置与常用技巧                                         |
+| Anthropic / Codex / Gemini CLI 环境搭建与最佳实践指南       |
 +----------------------------------------------------------+
 | [Claude Code]  [Codex CLI]  [Gemini CLI]                  |
 +----------------------------------------------------------+
-| 搜索技能说明...           [全部展开] [全部折叠]            |
-| 显示 X / 共 Y 条                      [官方文档 ↗]       |
+| 搜索配置说明...           [全部展开] [全部折叠]             |
+| 显示 X / 共 Y 条                      [官方文档 ↗]        |
 +----------------------------------------------------------+
-| > 概述（1 条）                                            |
-|   Skills 是什么、核心优势、渐进式披露机制                  |
-| > 快速开始（3 条）                                        |
-|   创建目录 → 编写 SKILL.md → 测试调用                     |
-| > 存放位置（4 条）                                        |
-|   企业级 / 个人 / 项目 / 插件 四种作用域                   |
-| > 配置参考（8 条）                                        |
-|   Frontmatter 字段详解：name, description, context...     |
-| > 配置模板 ⬇                                             |
-|   完整 SKILL.md 模板 [下载模板]                           |
+| > 前置条件（3 条）                                         |
+|   Node.js >= 18 / Python >= 3.8 / npm 等系统要求           |
+| > 安装步骤（4 条）                                         |
+|   npm install / pip install / 包管理器安装                  |
+| > API 密钥与认证（3 条）                                   |
+|   密钥获取 → 环境变量设置 → 认证验证                        |
+| > 环境变量配置（3 条）                                     |
+|   Windows / macOS / Linux 分操作系统示例                    |
+| > 初始化验证（2 条）                                       |
+|   验证命令 + 预期输出示例                                   |
+| > 核心命令示例（5 条）                                     |
+|   最常用命令及参数用法                                      |
+| > 典型应用场景（4 条）                                     |
+|   模型调用 / 代码审查 / 批量处理 / 成本管理                  |
+| > 性能优化（3 条）                                         |
+|   批量处理 / 并行调用 / 上下文管理                          |
+| > 问题排查（4 条）                                         |
+|   常见错误码 / 网络问题 / 权限问题 / 日志查看                |
+| > 常见问题 FAQ（5 条）                                     |
+|   精选高频问题与解答                                        |
 +----------------------------------------------------------+
 ```
 
 每个条目包含：
-- 标题（代码高亮显示路径/命令/字段名）
+- 标题（带 Badge 类型标注：前置条件 / 命令 / 配置 / 技巧 / FAQ）
 - 中文详细描述
-- 可选的用法示例（代码块展示）
-- 可选的配置模板（支持下载按钮）
+- 可复制的代码块（命令行 / 配置文件 / 环境变量）
+- 可选的多操作系统对照表格
 
-### 配置模板下载
+## 内容规划（基于官方文档）
 
-每个工具提供可下载的配置模板文件：
-- Claude Code: `SKILL.md` 模板（含完整 Frontmatter + 指令示例）
-- Codex CLI: `SKILL.md` + `agents/openai.yaml` 模板
-- Gemini CLI: `SKILL.md` 模板
+### Claude Code 环境配置
 
-下载功能使用 `file-saver` 库（已安装），生成 `.md` / `.yaml` 文件。
+| 分组 | 条目 |
+|------|------|
+| 前置条件 | Node.js >= 18、Git（推荐）、操作系统要求（macOS / Linux / Windows via WSL2） |
+| 安装步骤 | `npm install -g @anthropic-ai/claude-code`、npx 方式运行、版本更新 |
+| API 密钥与认证 | Anthropic Console 获取密钥、`ANTHROPIC_API_KEY` 设置、OAuth 登录（`/login`）、Max Plan 认证 |
+| 环境变量配置 | Windows / macOS / Linux 三系统环境变量设置示例、`.bashrc` / `.zshrc` / PowerShell 配置 |
+| 初始化验证 | `claude --version`、`claude` 启动交互模式验证 |
+| 核心命令示例 | 交互模式、一次性查询 `claude "query"`、管道模式 `claude -p`、继续对话 `--continue`、恢复会话 `--resume` |
+| 典型应用场景 | 代码审查（`/review`）、项目初始化（`/init`）、上下文压缩（`/compact`）、多模型切换 |
+| 性能优化 | 上下文窗口管理、Compact 策略、`/add-dir` 多目录加载、并行子代理 |
+| 问题排查 | 认证失败排查、Node.js 版本不兼容、网络代理配置、`/doctor` 诊断 |
+| 常见问题 FAQ | 支持哪些模型？费用如何计算？如何在企业代理后使用？如何重置配置？如何查看日志？ |
+
+### Codex CLI 环境配置
+
+| 分组 | 条目 |
+|------|------|
+| 前置条件 | Node.js >= 22、Git、macOS / Linux（Windows 暂不原生支持，需 WSL2）、沙箱依赖（macOS: Docker；Linux: bubblewrap） |
+| 安装步骤 | `npm install -g @openai/codex`、首次运行配置向导 |
+| API 密钥与认证 | OpenAI API Key 获取、`OPENAI_API_KEY` 设置、其他提供者密钥（`GEMINI_API_KEY` 等） |
+| 环境变量配置 | 三操作系统环境变量示例、`~/.codex/config.toml` 配置文件 |
+| 初始化验证 | `codex --version`、`codex --help`、简单查询测试 |
+| 核心命令示例 | 交互模式、一次性查询、`--approval-mode` 三种模式、`--model` 选择、`--sandbox` 控制 |
+| 典型应用场景 | Full-auto 模式批量重构、沙箱安全执行、多提供者切换、图片输入分析 |
+| 性能优化 | `--quiet` 精简输出、`config.toml` 预配置默认值、合理的审批模式选择 |
+| 问题排查 | Docker 沙箱启动失败、API 配额超限、模型不可用、权限问题 |
+| 常见问题 FAQ | 支持哪些 LLM 提供者？沙箱如何工作？如何离线使用？如何自定义指令？ |
+
+### Gemini CLI 环境配置
+
+| 分组 | 条目 |
+|------|------|
+| 前置条件 | Node.js >= 18、npm/npx、Google 账户 |
+| 安装步骤 | `npx https://github.com/anthropics/claude-code` 方式运行、`npm install -g @anthropic-ai/claude-code` 全局安装 --> 修正为 Gemini: `npx https://github.com/google-gemini/gemini-cli` 或 `npm install -g @anthropic-ai/gemini-cli` --> 实际为 `npx https://github.com/google-gemini/gemini-cli` |
+| API 密钥与认证 | Google AI Studio 获取 API Key、`GEMINI_API_KEY` 设置、Google OAuth 登录、Vertex AI 认证 |
+| 环境变量配置 | 三操作系统设置示例、`.gemini/settings.json` 配置 |
+| 初始化验证 | `gemini --version`、`gemini` 启动交互、`/help` 验证 |
+| 核心命令示例 | 交互模式、`--model` 选择、`-p` 非交互模式、`@file` 引用文件、`!command` 执行 Shell |
+| 典型应用场景 | 代码生成与重构、文件分析（`@file`）、检查点管理、多工具集成（MCP） |
+| 性能优化 | `/compress` 压缩上下文、`--sandbox` 沙箱模式、Memory 系统利用 |
+| 问题排查 | OAuth 授权失败、API 配额限制、代理设置、扩展加载错误 |
+| 常见问题 FAQ | 免费额度是多少？如何切换模型？如何使用 MCP？如何管理会话历史？ |
 
 ## 文件变更清单
 
 | 文件 | 操作 | 说明 |
 |------|------|------|
-| `src/pages/SkillsGuide.tsx` | 新建 | 技能使用帮助页面（含全部数据定义 + 搜索 + 分组 + 模板下载） |
-| `src/App.tsx` | 修改 | 添加 `/skills-guide` 路由 |
-| `src/components/AppSidebar.tsx` | 修改 | 添加「技能帮助」导航项（使用 `GraduationCap` 图标） |
-| `src/i18n/locales/zh.ts` | 修改 | 添加 `nav.skillsGuide` 及帮助页相关翻译 |
+| `src/pages/SetupGuide.tsx` | 新建 | 环境配置与技巧帮助页面（全部数据 + 搜索 + 分组 + 代码复制） |
+| `src/App.tsx` | 修改 | 添加 `/setup-guide` 路由 |
+| `src/components/AppSidebar.tsx` | 修改 | 添加「环境配置」导航项（使用 `Monitor` 图标） |
+| `src/i18n/locales/zh.ts` | 修改 | 添加 `nav.setupGuide` 及页面相关翻译 |
 | `src/i18n/locales/en.ts` | 修改 | 添加对应英文翻译 |
 
 ### 无新增依赖
 
-全部使用已有组件（Tabs、Accordion、Badge、Input、Button、Card、Tooltip）和已安装库（file-saver）。
+全部使用已有组件（Tabs、Badge、Input、Button、Card、Tooltip、Table）和已有模式。
 
 ## 技术实现
 
 ### 数据结构
 
 ```typescript
-interface SkillGuideItem {
-  title: string;           // 条目标题
-  description: string;     // 中文详细描述
-  code?: string;           // 代码示例
-  badge?: "path" | "command" | "field" | "config" | "template";
-  table?: { headers: string[]; rows: string[][] };  // 表格数据
+interface SetupGuideItem {
+  title: string;
+  description: string;
+  code?: string;          // 可复制代码块
+  badge?: "prereq" | "install" | "config" | "verify" | "command" | "scenario" | "optimize" | "debug" | "faq";
+  table?: { headers: string[]; rows: string[][] };
 }
 
-interface SkillGuideGroup {
-  category: string;        // 分组名
+interface SetupGuideGroup {
+  category: string;
   icon: LucideIcon;
-  items: SkillGuideItem[];
+  items: SetupGuideItem[];
 }
 
-interface SkillGuideTool {
+interface SetupGuideTool {
   id: string;
   name: string;
   officialUrl: string;
-  groups: SkillGuideGroup[];
-  templates: {             // 可下载模板
-    filename: string;
-    content: string;
-    label: string;
-  }[];
+  groups: SetupGuideGroup[];
 }
 ```
 
+### 一键复制功能
+
+每个代码块右上角增加复制按钮，使用 `navigator.clipboard.writeText()` 实现，复制成功后短暂显示"已复制"反馈：
+
+```typescript
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <Button variant="ghost" size="icon" onClick={handleCopy}>
+      {copied ? <Check /> : <Copy />}
+    </Button>
+  );
+}
+```
+
+### Badge 类型
+
+| Badge | 含义 | 样式 |
+|-------|------|------|
+| prereq | 前置条件 | 蓝色调 |
+| install | 安装步骤 | 绿色调 |
+| config | 配置项 | 橙色调 |
+| verify | 验证命令 | 紫色调 |
+| command | 核心命令 | 主题色 |
+| scenario | 应用场景 | 强调色 |
+| optimize | 性能优化 | 成功色 |
+| debug | 问题排查 | 警告色 |
+| faq | 常见问题 | 信息色 |
+
 ### 搜索功能
 
-- 实时过滤：匹配标题或描述中的关键词
-- 自动展开匹配分组
-- 显示匹配/总数统计
+与 `/cli-guide` 一致：实时过滤标题和描述，自动展开匹配分组，显示匹配/总数统计。
 
 ### 视觉设计
 
-- 与 `/cli-guide` 页面风格完全一致
-- 代码块使用 `font-mono` + 背景色高亮
-- Badge 区分条目类型（路径/命令/字段/配置/模板）
-- 表格使用 Table 组件展示结构化参考数据
-- 模板下载按钮使用 Download 图标
+- 代码块使用 `font-mono` + 暗色背景 + 右上角复制按钮
+- 多操作系统配置使用 Table 组件展示对照表
+- Badge 区分条目类型
 - 支持暗色主题
+- 与现有 `/cli-guide`、`/skills-guide` 页面风格完全一致
+
