@@ -1,69 +1,201 @@
 
-# MCP Servers & Skills 预设分类重构
+# Prompts 提示词优化功能实现计划
 
-## 问题分析
+## 背景
 
-当前按 5 大平台（Claude/Codex/Gemini/OpenCode/黑客松）分类存在以下问题：
+参考开源项目 `linshenkx/prompt-optimizer`（21k+ Stars）的核心逻辑，为现有 Prompts 模块添加 **AI 提示词优化** 能力。该项目的核心功能包括：
 
-1. **严重冗余**：playwright、context7、mcp-fetch 在每个平台 Tab 中重复出现
-2. **分类逻辑错误**：MCP Server 是协议级工具，与平台无关；Skills 仓库也是通用资源
-3. **用户困惑**：用户不知道该从哪个平台 Tab 找需要的工具
-4. **维护成本高**：同一工具需在多处更新
+1. **双模式优化**：系统提示词优化 + 用户提示词优化
+2. **优化模板**：使用预定义模板指导 LLM 如何优化提示词
+3. **迭代改进**：对已优化的提示词进行多轮定向迭代
+4. **对比测试**：原始 vs 优化后提示词的效果对比
+5. **优化历史**：记录每次优化的版本
 
-## 解决方案
+## 实现范围
 
-### 原则：按「功能用途」分类，而非按「平台」分类
-
-平台绑定已经在 MCP Server 表单的"绑定应用"字段和导出模块中实现，预设选择阶段无需重复。
-
----
-
-### MCP Servers 新分类
-
-移除 5 个平台 Tab，改为按功能分类：
-
-| 分类 | 内置 MCP Servers |
-|------|-----------------|
-| 浏览器与测试 | playwright, puppeteer |
-| 搜索与网络 | mcp-fetch, brave-search, context7 |
-| 数据与存储 | sqlite, postgres, mcp-memory, mcp-filesystem |
-| 开发工具 | github, sequential-thinking, everything |
-| 协作与通信 | slack |
-
-共 13 个不重复的 MCP Server，从原来 5 个 Tab x 5 项 = 25 项（大量重复）精简为 5 类 13 项（零重复）。
-
-### Skills 仓库新分类
-
-移除 5 个平台 Tab（claude/codex/gemini/opencode/hackathon），仅保留按功能分类：
-
-| 分类 | 说明 |
-|------|------|
-| 研发类 | AI 框架、编码助手、MCP 官方资源 |
-| 设计类 | 设计工具、白板、动画引擎 |
-| 办公类 | Chat UI、工作流、项目管理 |
-| QA 测试 | 端到端测试、性能测试、Mock 工具 |
-| 文档处理 | PDF 解析、文档转换、内容提取 |
-
-每类保留原有的 10 个高 Star 仓库，去除跨平台重复项。
+基于当前项目架构（React + Lovable Cloud），提取 prompt-optimizer 的核心优化逻辑，适配为 Edge Function + 前端 UI 方案。
 
 ---
 
-## 技术实现
+## 一、后端 - Edge Function
 
-### 文件变更
+### 1.1 新建 `optimize-prompt` Edge Function
 
-**src/pages/McpServers.tsx**
-- 将 `MCP_PRESETS` 从平台分类重构为功能分类：
-  - `browser`: 浏览器与测试（playwright, puppeteer）
-  - `search`: 搜索与网络（mcp-fetch, brave-search, context7）
-  - `data`: 数据与存储（sqlite, postgres, mcp-memory, mcp-filesystem）
-  - `devtools`: 开发工具（github, sequential-thinking, everything）
-  - `collab`: 协作与通信（slack）
-- 更新 `MCP_PRESET_KEYS` 和模板选择 Tab UI
-- 从 `APP_OPTIONS` 中移除 `hackathon`（保留 claude/codex/gemini/opencode 四个标准平台作为绑定选项）
+核心职责：接收原始提示词 + 优化模板，调用 Lovable AI 模型返回优化结果。
 
-**src/pages/Skills.tsx**
-- 从 `PRESET_REPOS` 中移除 `claude`, `codex`, `gemini`, `opencode`, `hackathon` 五个平台 key
-- 仅保留 `dev`, `design`, `office`, `qa`, `docs` 五个功能分类
-- 更新 `PRESET_TABS` 移除平台 Tab，只保留 5 个功能 Tab
-- Tab 数量从 10 个减少到 5 个，更简洁清晰
+```text
+POST /optimize-prompt
+Body: {
+  action: "optimize" | "iterate" | "evaluate",
+  prompt: string,           // 原始/当前提示词
+  optimizedPrompt?: string, // 迭代时传入已优化版本
+  template: string,         // 优化模板 ID
+  mode: "system" | "user",  // 系统提示词 or 用户提示词
+  feedback?: string         // 迭代时的用户反馈
+}
+
+Response: {
+  result: string,           // 优化后的提示词
+  analysis?: string         // 分析说明（评估模式）
+}
+```
+
+**优化模板**（内置于 Edge Function，参考 prompt-optimizer 的 default-templates）：
+
+- **optimize/general**: 通用系统提示词优化 - 结构化、明确化、添加约束
+- **optimize/academic**: 学术/严谨风格优化
+- **optimize/creative**: 创意/开放风格优化
+- **user-optimize/general**: 用户提示词优化 - 意图澄清、细节补充
+- **iterate/refine**: 定向迭代 - 基于反馈改进已有提示词
+- **evaluate/analyze**: 评估分析 - 评分 + 改进建议
+
+模板核心逻辑（参考 prompt-optimizer 的模板处理器）：
+- 模板使用 Mustache 风格变量：`{{original_prompt}}`, `{{optimized_prompt}}`, `{{feedback}}`
+- Edge Function 内部拼装 system prompt + user prompt 后调用 LLM
+
+**使用的 AI 模型**：`google/gemini-2.5-flash`（Lovable AI 内置，无需 API Key）
+
+### 1.2 数据库 - 优化历史表
+
+新建 `prompt_optimize_history` 表：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | uuid PK | 主键 |
+| user_id | text | 用户 ID |
+| prompt_id | text, nullable | 关联的 Prompt ID（可选） |
+| original_prompt | text | 原始提示词 |
+| optimized_prompt | text | 优化后提示词 |
+| template | text | 使用的模板 ID |
+| mode | text | system / user |
+| action | text | optimize / iterate / evaluate |
+| feedback | text, nullable | 用户反馈（迭代时） |
+| analysis | text, nullable | 分析结果（评估时） |
+| created_at | timestamptz | 创建时间 |
+
+RLS 策略：用户只能读写自己的记录。
+
+---
+
+## 二、前端 - Prompts 页面增强
+
+### 2.1 页面布局重构
+
+将 Prompts 页面从纯 CRUD 列表升级为 **双 Tab 布局**：
+
+```text
+[Prompts 管理]  [提示词优化器]
+```
+
+- **Tab 1 - Prompts 管理**：保留现有 CRUD 功能不变
+- **Tab 2 - 提示词优化器**：新增优化工作区（参考 prompt-optimizer 截图的布局）
+
+### 2.2 提示词优化器 UI（核心新增）
+
+布局参考 prompt-optimizer 的三栏设计，适配为上下两栏：
+
+```text
++------------------------------------------+
+| [系统提示词优化] [用户提示词优化]           |  <- 模式切换
++------------------------------------------+
+| 原始提示词                                |
+| +--------------------------------------+ |
+| | (Textarea - 输入原始提示词)           | |
+| +--------------------------------------+ |
+| 优化模板: [通用优化 v]  [分析] [优化]     |  <- 模板选择 + 操作按钮
++------------------------------------------+
+| 优化工作区                                |
+| +--------------------------------------+ |
+| | (优化后的提示词 - 可编辑)             | |
+| +--------------------------------------+ |
+| [复制] [保存为 Prompt] [继续迭代]         |  <- 操作按钮
++------------------------------------------+
+| 迭代反馈（可选）                          |
+| +--------------------------------------+ |
+| | (用户输入改进方向)                    | |
+| +--------------------------------------+ |
++------------------------------------------+
+| 优化历史                      [清除历史]  |
+| v1 原始 -> v2 通用优化 -> v3 迭代        |  <- 版本链
++------------------------------------------+
+```
+
+### 2.3 交互流程
+
+参考 prompt-optimizer 的核心工作流：
+
+1. 用户输入原始提示词
+2. 选择优化模板（通用/学术/创意）
+3. 点击"分析"查看评估报告（评分 + 改进建议）
+4. 点击"优化"获得优化后版本
+5. 可在优化结果上继续"迭代"（输入反馈方向）
+6. 满意后"保存为 Prompt"（自动创建到 Prompts 管理 Tab）
+7. 优化历史记录每一步操作
+
+### 2.4 "保存为 Prompt" 功能
+
+优化完成后，用户可以一键将优化结果保存为 Prompts 管理中的新 Prompt：
+- 弹出对话框填写名称和目标文件
+- 自动填充优化后的内容
+
+---
+
+## 三、文件变更清单
+
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `supabase/functions/optimize-prompt/index.ts` | 新建 | 优化 Edge Function（含模板定义） |
+| `src/pages/Prompts.tsx` | 修改 | 添加双 Tab 布局 + 优化器 UI |
+| `src/i18n/locales/zh.ts` | 修改 | 添加优化器相关中文翻译 |
+| `src/i18n/locales/en.ts` | 修改 | 添加优化器相关英文翻译 |
+| 数据库迁移 | 新建 | `prompt_optimize_history` 表 + RLS |
+
+### 无新增依赖
+
+全部使用已有组件和库。
+
+---
+
+## 四、风险评估与应对
+
+| 风险 | 等级 | 应对措施 |
+|------|------|----------|
+| LLM 输出不稳定 | 中 | 模板中严格约束输出格式；前端做容错处理 |
+| 优化耗时较长 | 低 | 使用 gemini-2.5-flash（快速模型）；UI 显示加载动画 |
+| 模板质量影响效果 | 中 | 严格参考 prompt-optimizer 已验证的模板内容 |
+| Edge Function 超时 | 低 | 单次优化 token 量可控，flash 模型响应快 |
+| 前端页面复杂度增加 | 低 | 通过 Tab 分离管理和优化功能，互不干扰 |
+
+---
+
+## 五、技术细节
+
+### 5.1 优化模板设计（核心，参考 prompt-optimizer 的 default-templates/optimize）
+
+**通用系统提示词优化模板**（system prompt 部分）：
+```
+你是一位专业的提示词工程专家。你的任务是优化用户提供的系统提示词（System Prompt），使其更加结构化、明确和高效。
+
+优化原则：
+1. 明确角色定义：清晰定义 AI 的角色、身份和专业领域
+2. 结构化组织：使用清晰的层级结构（标题、列表、分隔符）
+3. 约束与边界：明确 AI 应该做什么和不应该做什么
+4. 输出格式：指定期望的输出格式和风格
+5. 示例驱动：在适当时添加输入/输出示例
+6. 保持原意：优化不等于重写，保留原始意图和核心需求
+7. 适度原则：避免过度复杂化，保持简洁有效
+8. 变量保留：保留原文中的占位符变量（如 {{variable}}）
+
+直接输出优化后的完整提示词，不要添加解释或说明。
+```
+
+### 5.2 Edge Function 调用 Lovable AI
+
+```typescript
+const response = await fetch(
+  `https://cllruxedtdvkljmggnxd.supabase.co/functions/v1/optimize-prompt`,
+  { method: "POST", body: JSON.stringify({ ... }) }
+);
+```
+
+Edge Function 内部通过 `LOVABLE_API_KEY` 调用 Lovable AI 支持的模型。
