@@ -1,163 +1,96 @@
 
-# 添加「AI 前沿技术概览」图文页面
+# 解决两个核心问题
 
-## 概述
+## 问题诊断
 
-新建一个独立的「AI 前沿技术概览」页面（`/ai-glossary`），以结构化、图文并茂的方式介绍 Agent、Sub-Agent、Agent Team、MCP Servers、Skills、ACP、LSP、RAG、Workflow、Prompt Engineering 等 10 大 AI 前沿技术概念。页面采用与现有指南页面一致的 Tab 分组 + 手风琴展开 + 搜索过滤交互模式。
+### 问题一：「测试失败 supabaseKey is required」
 
-## 页面结构设计
+**根本原因**：`supabase/functions/test-connection/index.ts` 的第 24 行使用的是 `SUPABASE_PUBLISHABLE_KEY` 这个 secret 名称，但实际上 Supabase 内置环境中该变量名是 `SUPABASE_ANON_KEY`（Lovable Cloud 会自动注入 `SUPABASE_URL`、`SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`，而不是 `SUPABASE_PUBLISHABLE_KEY`）。
 
-```text
-+----------------------------------------------------------+
-| AI 前沿技术概览                                            |
-| 大模型相关核心概念与前沿技术全面解析                         |
-+----------------------------------------------------------+
-| [Agent 体系]  [协议与服务]  [技术方法]                      |
-+----------------------------------------------------------+
-| 搜索技术概念...          [全部展开] [全部折叠]              |
-| 显示 X / 共 Y 条                                          |
-+----------------------------------------------------------+
-| > Agent（智能代理）                                        |
-|   定义与介绍 | 作用/功能 | 应用场景 | 相互关系              |
-| > Sub-Agent（子代理）                                      |
-|   ...                                                     |
-| > Agent Team（代理团队）                                   |
-|   ...                                                     |
-+----------------------------------------------------------+
+通过查看 secrets 列表，Lovable Cloud 配置的密钥名是 `SUPABASE_ANON_KEY`（标准名），但代码里读取的是 `SUPABASE_PUBLISHABLE_KEY`，导致 `supabaseKey` 为空，触发 Supabase 客户端的 "supabaseKey is required" 错误。
+
+**修复**：将 `test-connection` edge function 中的 `SUPABASE_PUBLISHABLE_KEY` 改为 `SUPABASE_ANON_KEY`。
+
+---
+
+### 问题二：Providers / MCP Servers / Skills 启用后能否真实生效到本地 PC？
+
+**现状说明**（重要，需要向用户清楚解释）：
+
+这是一个 **Web 应用**，它运行在浏览器中。Web 端**无法直接修改本地 PC 的文件系统**（如 `~/.claude/settings.json`、`~/.codex/config.toml` 等），这是浏览器安全沙箱的根本限制，不是 Bug。
+
+**当前架构的定位**是：**云端配置备份与管理中心 + 配置文件生成器**。
+
+**目前已有的「应用到本地」机制**（导出功能已存在）：
+- 用户在 Web 端管理配置 → 云端保存
+- 用户通过「导出」页面，将配置导出为对应格式的本地文件（`settings.json`、`CLAUDE.md` 等）
+- 用户手动将这些文件放到本地 CLI 工具读取的路径
+
+**需要改进的地方**：这个「导出→手动部署」的流程对用户不够直观，很多用户不知道需要这一步。应该在 MCP Servers 等功能页面加入**清晰的本地部署说明**。
+
+---
+
+## 解决方案
+
+### 修复一：修复 test-connection Edge Function
+
+将 `supabase/functions/test-connection/index.ts` 第 24 行：
+```typescript
+// 修改前（错误）
+const supabaseKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+
+// 修改后（正确）
+const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 ```
 
-### 三个 Tab 分组
+同时增加防御性检查，避免 key 为 undefined 时导致崩溃：
+```typescript
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY");
+if (!supabaseUrl || !supabaseKey) {
+  return new Response(JSON.stringify({ success: false, message: "服务配置错误" }), { ... });
+}
+```
 
-| Tab | 包含概念 |
-|-----|---------|
-| Agent 体系 | Agent、Sub-Agent、Agent Team、Skills |
-| 协议与服务 | MCP Servers、ACP、LSP |
-| 技术方法 | RAG、Workflow、Prompt Engineering |
+这一个改动将直接修复连通性测试的报错。
 
-### 每个概念的条目结构
+### 修复二：在 MCP Servers 页面添加「本地部署指引」Banner
 
-每个概念展开后包含 4 个子节：
-- **定义与介绍** - 核心概念、原理（badge: "concept"）
-- **作用/功能** - 解决什么问题、提供什么能力（badge: "function"）
-- **应用场景** - 实际案例和潜在用途（badge: "scenario"）
-- **相互关系** - 与其他概念的关联、协同、依赖（badge: "relation"）
+在 MCP Servers 页面顶部（以及 Providers 页面）添加一个信息横幅，清楚说明：
+- Web 端管理配置会**实时同步到云端**（即云端备份效果已实现）
+- 要让配置**生效于本地 CLI**，需要通过「导出」→ 将文件放置到本地指定路径
+- 提供快捷跳转到「导出」页面的按钮，并显示每个应用对应的本地配置文件路径
 
-## 内容大纲
+横幅内容示例：
+```
+信息提示卡片：
+标题：本地部署说明
+内容：配置已实时备份到云端。要应用到本地 CLI，需将配置文件放置到对应路径：
+  - Claude Code：~/.claude/settings.json
+  - Codex CLI：~/.codex/config.toml
+  - Gemini CLI：~/.gemini/settings.json
+按钮：[前往导出配置]
+```
 
-### 1. Agent（智能代理）
-- 定义：基于 LLM 的自主决策实体，具备感知、推理、行动能力
-- 作用：自主完成复杂任务，替代人工多步操作
-- 场景：代码开发助手、客服自动化、数据分析
-- 关系：是 Sub-Agent 和 Agent Team 的基础单元；使用 Skills 扩展能力；通过 MCP/ACP 协议通信
+### 修复三：改善导出页面的「应用导出」说明
 
-### 2. Sub-Agent（子代理）
-- 定义：由主 Agent 派生的专注型代理，执行特定子任务
-- 作用：任务分解与并行处理，降低单 Agent 复杂度
-- 场景：Claude Code 的 `context: fork`、多文件并行编辑
-- 关系：由 Agent 创建和调度；可组成 Agent Team；通过 Workflow 编排
+在导出页面的「应用导出」卡片里，为每个 CLI 工具添加本地文件放置路径说明，让用户清楚下一步操作。
 
-### 3. Agent Team（代理团队）
-- 定义：多个 Agent 协作的团队架构
-- 作用：复杂任务的分工协作、角色专业化
-- 场景：软件开发团队（架构师+开发者+测试）、研究团队
-- 关系：由多个 Agent/Sub-Agent 组成；通过 ACP 协调；使用 Workflow 定义协作流程
-
-### 4. Skills（智能代理技能）
-- 定义：可复用的能力包，扩展 Agent 的专业领域知识
-- 作用：渐进式披露能力、模块化复用
-- 场景：Claude Code Skills、Codex Skills、Gemini Skills
-- 关系：被 Agent 加载和调用；可通过 MCP Server 提供外部能力
-
-### 5. MCP Servers（模型上下文协议服务器）
-- 定义：Model Context Protocol 的服务端实现
-- 作用：为 Agent 提供标准化的外部工具调用接口
-- 场景：文件系统、数据库查询、浏览器自动化、API 集成
-- 关系：被 Agent 通过 MCP 协议调用；与 ACP 互补；可作为 Skills 的底层能力提供者
-
-### 6. ACP（Agent 通信协议）
-- 定义：Agent Communication Protocol，Agent 间标准化通信协议
-- 作用：实现多 Agent 发现、协商和协作
-- 场景：跨平台 Agent 互操作、Agent 市场
-- 关系：协调 Agent Team 通信；与 MCP 互补（MCP 管工具，ACP 管 Agent 间通信）
-
-### 7. LSP（语言服务协议）
-- 定义：Language Server Protocol 在 AI 场景的扩展应用
-- 作用：为 Agent 提供代码理解能力（补全、跳转、诊断）
-- 场景：AI 编码助手的代码分析、智能重构
-- 关系：增强 Agent 的代码理解能力；被 Skills 利用
-
-### 8. RAG（检索增强生成）
-- 定义：Retrieval-Augmented Generation，检索外部知识增强 LLM 输出
-- 作用：解决 LLM 知识截止和幻觉问题
-- 场景：企业知识库问答、文档检索、实时信息查询
-- 关系：可作为 MCP Server 提供检索服务；增强 Agent 的知识获取能力
-
-### 9. Workflow（工作流）
-- 定义：预定义的任务执行流程编排
-- 作用：将复杂任务拆解为可控的步骤序列
-- 场景：CI/CD 自动化、多步数据处理、审批流程
-- 关系：编排 Agent/Sub-Agent 的执行顺序；可内嵌 Prompt 模板
-
-### 10. Prompt Engineering（提示词工程）
-- 定义：设计和优化 LLM 输入提示的方法论
-- 作用：引导 LLM 产生高质量、可控的输出
-- 场景：CLAUDE.md 系统提示、Few-shot 示例、思维链
-- 关系：是 Skills 内容的编写基础；Workflow 中嵌入 Prompt 模板；Agent 的行为由 Prompt 驱动
+---
 
 ## 文件变更清单
 
 | 文件 | 操作 | 说明 |
 |------|------|------|
-| `src/pages/AiGlossary.tsx` | 新建 | AI 前沿技术概览页面（含全部数据定义 + 搜索 + 分组） |
-| `src/App.tsx` | 修改 | 添加 `/ai-glossary` 路由 |
-| `src/components/AppSidebar.tsx` | 修改 | 添加「AI 技术」导航项（使用 `Brain` 图标） |
-| `src/i18n/locales/zh.ts` | 修改 | 添加 `nav.aiGlossary` 及页面相关中文翻译 |
-| `src/i18n/locales/en.ts` | 修改 | 添加对应英文翻译 |
+| `supabase/functions/test-connection/index.ts` | 修改 | 将 `SUPABASE_PUBLISHABLE_KEY` 改为 `SUPABASE_ANON_KEY`，并增加防御性检查 |
+| `src/pages/McpServers.tsx` | 修改 | 添加本地部署说明横幅，指引用户将配置同步到本地 |
+| `src/pages/Providers.tsx` | 修改 | 添加同步说明横幅 |
+| `src/pages/Export.tsx` | 修改 | 在应用导出卡片中添加目标路径说明 |
 
-### 无新增依赖
+### 无新增依赖，无数据库变更
 
-全部使用已有组件（Tabs、Badge、Input、Button、Card、Collapsible）。
+---
 
-## 技术实现
+## 关于「Stdio MCP 连通性测试」的特殊说明
 
-### 数据结构
-
-```typescript
-interface GlossarySection {
-  title: string;           // 子节标题（定义与介绍 / 作用 / 场景 / 关系）
-  content: string;         // 详细内容
-  badge?: "concept" | "function" | "scenario" | "relation";
-}
-
-interface GlossaryConcept {
-  id: string;              // 唯一标识
-  title: string;           // 概念名称
-  subtitle: string;        // 中文副标题
-  icon: LucideIcon;
-  sections: GlossarySection[];
-}
-
-interface GlossaryTab {
-  id: string;
-  name: string;
-  concepts: GlossaryConcept[];
-}
-```
-
-### Badge 类型
-
-| Badge | 含义 | 样式 |
-|-------|------|------|
-| concept | 定义与介绍 | 蓝色调 |
-| function | 作用/功能 | 绿色调 |
-| scenario | 应用场景 | 橙色调 |
-| relation | 相互关系 | 紫色调 |
-
-### 视觉设计
-
-- 与现有 `/cli-guide`、`/skills-guide`、`/setup-guide` 页面风格完全一致
-- 每个概念使用 Collapsible 展开/折叠
-- 概念内部四个子节使用卡片式布局，带 Badge 和图标
-- 关系说明中引用其他概念时使用高亮标注
-- 搜索实时过滤标题和内容
-- 支持暗色主题
+对于 `transport_type = "stdio"` 的 MCP Server（如 `npx -y @anthropics/mcp-fetch`），即使修复了 key 问题，测试结果也会是「配置有效，但需在本地验证」，这是正确的预期行为——因为 stdio 类型的 MCP Server 需要在本地有 Node.js 运行时才能执行 `npx` 命令，云端 Edge Function 环境没有 Node.js，无法真正启动这些进程。HTTP/SSE 类型的 MCP Server 可以真正测试连通性。
