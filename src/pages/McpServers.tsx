@@ -9,12 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Pencil, Trash2, Server, Loader2, Wifi, Terminal, Radio, Activity, CheckCircle2, XCircle, Info, FolderOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, Server, Loader2, Wifi, Terminal, Radio, Activity, CheckCircle2, XCircle, Info, FolderOpen, PlayCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useTranslation } from "react-i18next";
@@ -217,7 +221,9 @@ export default function McpServers() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingServer, setEditingServer] = useState<McpServer | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [testingAll, setTestingAll] = useState(false);
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string; latency_ms?: number }>>({});
+  const [deleteTarget, setDeleteTarget] = useState<McpServer | null>(null);
 
   const testConnection = async (server: McpServer) => {
     setTestingId(server.id);
@@ -244,18 +250,33 @@ export default function McpServers() {
       );
       const result = await resp.json();
       setTestResults((prev) => ({ ...prev, [server.id]: result }));
-      toast({
-        title: result.success ? "测试通过" : "测试失败",
-        description: result.message + (result.latency_ms ? ` (${result.latency_ms}ms)` : ""),
-        variant: result.success ? "default" : "destructive",
-      });
+      return result;
     } catch (e: any) {
       const result = { success: false, message: e.message };
       setTestResults((prev) => ({ ...prev, [server.id]: result }));
-      toast({ title: "测试失败", description: e.message, variant: "destructive" });
+      return result;
     } finally {
       setTestingId(null);
     }
+  };
+
+  const testAllConnections = async () => {
+    if (servers.length === 0) return;
+    setTestingAll(true);
+    let successCount = 0;
+    let failCount = 0;
+    for (const server of servers) {
+      setTestingId(server.id);
+      const result = await testConnection(server);
+      if (result?.success) successCount++; else failCount++;
+    }
+    setTestingAll(false);
+    setTestingId(null);
+    toast({
+      title: `一键测试完成`,
+      description: `成功 ${successCount} 个，失败 ${failCount} 个`,
+      variant: failCount > 0 && successCount === 0 ? "destructive" : "default",
+    });
   };
 
   const { data: servers = [], isLoading } = useQuery({
@@ -337,40 +358,53 @@ export default function McpServers() {
             { title: t("helpMcp.bindings"), content: t("helpMcp.bindingsDesc"), tip: t("helpMcp.bindingsTip") },
           ]} />
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" />新增 MCP Server</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>新增 MCP Server</DialogTitle></DialogHeader>
-            <Tabs defaultValue="browser" className="mb-4">
-              <TabsList className="flex-wrap h-auto gap-1">
+        <div className="flex items-center gap-2">
+          {servers.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={testAllConnections}
+              disabled={testingAll || testingId !== null}
+            >
+              {testingAll ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="mr-1.5 h-3.5 w-3.5" />}
+              一键测试
+            </Button>
+          )}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="mr-2 h-4 w-4" />新增 MCP Server</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>新增 MCP Server</DialogTitle></DialogHeader>
+              <Tabs defaultValue="browser" className="mb-4">
+                <TabsList className="flex-wrap h-auto gap-1">
+                  {MCP_PRESET_KEYS.map((key) => (
+                    <TabsTrigger key={key} value={key} className="text-xs">{MCP_PRESETS[key].label}</TabsTrigger>
+                  ))}
+                </TabsList>
                 {MCP_PRESET_KEYS.map((key) => (
-                  <TabsTrigger key={key} value={key} className="text-xs">{MCP_PRESETS[key].label}</TabsTrigger>
+                  <TabsContent key={key} value={key} className="mt-2">
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {MCP_PRESETS[key].items.map((tpl) => (
+                        <TooltipProvider key={tpl.name} delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => applyTemplate(tpl)}>
+                                {tpl.name}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom"><p className="text-xs max-w-[200px]">{tpl.desc}</p></TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ))}
+                    </div>
+                  </TabsContent>
                 ))}
-              </TabsList>
-              {MCP_PRESET_KEYS.map((key) => (
-                <TabsContent key={key} value={key} className="mt-2">
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {MCP_PRESETS[key].items.map((tpl) => (
-                      <TooltipProvider key={tpl.name} delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => applyTemplate(tpl)}>
-                              {tpl.name}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom"><p className="text-xs max-w-[200px]">{tpl.desc}</p></TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
-            <McpServerForm onSave={(data) => createMutation.mutate(data)} saving={createMutation.isPending} />
-          </DialogContent>
-        </Dialog>
+              </Tabs>
+              <McpServerForm onSave={(data) => createMutation.mutate(data)} saving={createMutation.isPending} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Local Deployment Banner */}
@@ -442,8 +476,16 @@ export default function McpServers() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        disabled={testingId === server.id}
-                        onClick={() => testConnection(server)}
+                        disabled={testingId === server.id || testingAll}
+                        onClick={() => {
+                          testConnection(server).then((result) => {
+                            toast({
+                              title: result.success ? "测试通过" : "测试失败",
+                              description: result.message + (result.latency_ms ? ` (${result.latency_ms}ms)` : ""),
+                              variant: result.success ? "default" : "destructive",
+                            });
+                          });
+                        }}
                         title="测试连接"
                       >
                         {testingId === server.id ? (
@@ -459,7 +501,12 @@ export default function McpServers() {
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingServer(server)}>
                         <Pencil className="h-3 w-3" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(server.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => setDeleteTarget(server)}
+                      >
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
@@ -483,6 +530,30 @@ export default function McpServers() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除 MCP Server「<strong>{deleteTarget?.name}</strong>」吗？此操作不可撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -9,8 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Copy, Zap, Loader2, Activity, CheckCircle2, XCircle, Info, FolderOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, Zap, Loader2, Activity, CheckCircle2, XCircle, Info, FolderOpen, PlayCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useTranslation } from "react-i18next";
@@ -129,7 +133,9 @@ export default function Providers() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [testingAll, setTestingAll] = useState(false);
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string; latency_ms?: number }>>({});
+  const [deleteTarget, setDeleteTarget] = useState<Provider | null>(null);
 
   const testConnection = async (provider: Provider) => {
     setTestingId(provider.id);
@@ -156,18 +162,33 @@ export default function Providers() {
       );
       const result = await resp.json();
       setTestResults((prev) => ({ ...prev, [provider.id]: result }));
-      toast({
-        title: result.success ? "连接成功" : "连接失败",
-        description: result.message + (result.latency_ms ? ` (${result.latency_ms}ms)` : ""),
-        variant: result.success ? "default" : "destructive",
-      });
+      return result;
     } catch (e: any) {
       const result = { success: false, message: e.message };
       setTestResults((prev) => ({ ...prev, [provider.id]: result }));
-      toast({ title: "测试失败", description: e.message, variant: "destructive" });
+      return result;
     } finally {
       setTestingId(null);
     }
+  };
+
+  const testAllConnections = async () => {
+    if (providers.length === 0) return;
+    setTestingAll(true);
+    let successCount = 0;
+    let failCount = 0;
+    for (const provider of providers) {
+      setTestingId(provider.id);
+      const result = await testConnection(provider);
+      if (result?.success) successCount++; else failCount++;
+    }
+    setTestingAll(false);
+    setTestingId(null);
+    toast({
+      title: `一键测试完成`,
+      description: `成功 ${successCount} 个，失败 ${failCount} 个`,
+      variant: failCount > 0 && successCount === 0 ? "destructive" : "default",
+    });
   };
 
   const { data: providers = [], isLoading } = useQuery({
@@ -275,24 +296,37 @@ export default function Providers() {
             { title: t("helpProviders.test"), content: t("helpProviders.testDesc"), tip: t("helpProviders.testTip") },
           ]} />
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" />新增 Provider</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>新增 Provider</DialogTitle>
-            </DialogHeader>
-            <div className="mb-4 flex gap-2">
-              {PROVIDER_PRESETS.map((p) => (
-                <Button key={p.provider_type} variant="outline" size="sm" onClick={() => applyPreset(p)}>
-                  {p.name}
-                </Button>
-              ))}
-            </div>
-            <ProviderForm onSave={(data) => createMutation.mutate(data)} saving={createMutation.isPending} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+          {providers.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={testAllConnections}
+              disabled={testingAll || testingId !== null}
+            >
+              {testingAll ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="mr-1.5 h-3.5 w-3.5" />}
+              一键测试
+            </Button>
+          )}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="mr-2 h-4 w-4" />新增 Provider</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>新增 Provider</DialogTitle>
+              </DialogHeader>
+              <div className="mb-4 flex gap-2">
+                {PROVIDER_PRESETS.map((p) => (
+                  <Button key={p.provider_type} variant="outline" size="sm" onClick={() => applyPreset(p)}>
+                    {p.name}
+                  </Button>
+                ))}
+              </div>
+              <ProviderForm onSave={(data) => createMutation.mutate(data)} saving={createMutation.isPending} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Local Deployment Banner */}
@@ -338,8 +372,16 @@ export default function Providers() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    disabled={testingId === provider.id}
-                    onClick={() => testConnection(provider)}
+                    disabled={testingId === provider.id || testingAll}
+                    onClick={() => {
+                      testConnection(provider).then((result) => {
+                        toast({
+                          title: result.success ? "连接成功" : "连接失败",
+                          description: result.message + (result.latency_ms ? ` (${result.latency_ms}ms)` : ""),
+                          variant: result.success ? "default" : "destructive",
+                        });
+                      });
+                    }}
                     title="测试连接"
                   >
                     {testingId === provider.id ? (
@@ -358,7 +400,12 @@ export default function Providers() {
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => duplicateMutation.mutate(provider)}>
                     <Copy className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMutation.mutate(provider.id)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => setDeleteTarget(provider)}
+                  >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -389,6 +436,30 @@ export default function Providers() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除 Provider「<strong>{deleteTarget?.name}</strong>」吗？此操作不可撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
