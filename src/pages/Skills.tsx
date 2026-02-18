@@ -15,7 +15,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Trash2, BookOpen, Loader2, GitBranch, RefreshCw, Pencil, FolderGit2, LayoutGrid, List, Search, Info } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Plus, Trash2, BookOpen, Loader2, GitBranch, RefreshCw, Pencil, FolderGit2, LayoutGrid, List, Search, Info, PlayCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { HelpDialog } from "@/components/HelpDialog";
 import type { Tables } from "@/integrations/supabase/types";
@@ -242,6 +246,8 @@ export default function Skills() {
   const [repoDialogOpen, setRepoDialogOpen] = useState(false);
   const [editingRepo, setEditingRepo] = useState<SkillsRepo | null>(null);
   const [scanningRepoId, setScanningRepoId] = useState<string | null>(null);
+  const [scanningAll, setScanningAll] = useState(false);
+  const [deleteRepoTarget, setDeleteRepoTarget] = useState<SkillsRepo | null>(null);
 
   // Skills view & filter state
   const [viewMode, setViewMode] = useState<string>(() => localStorage.getItem("skills-view") || "card");
@@ -355,6 +361,44 @@ export default function Skills() {
     }
   };
 
+  const scanAllSkills = async () => {
+    if (repos.length === 0) return;
+    setScanningAll(true);
+    let totalCount = 0;
+    for (const repo of repos) {
+      setScanningRepoId(repo.id);
+      try {
+        const basePath = repo.subdirectory ? `${repo.subdirectory}` : "";
+        const apiUrl = `https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${basePath}?ref=${repo.branch}`;
+        const resp = await fetch(apiUrl);
+        if (!resp.ok) continue;
+        const items = await resp.json();
+        const skillDirs = Array.isArray(items) ? items.filter((i: any) => i.type === "dir") : [];
+        for (const dir of skillDirs) {
+          const existing = skills.find((s) => s.name === dir.name && s.repo_id === repo.id);
+          if (!existing) {
+            let description = "";
+            try {
+              const readmeResp = await fetch(`https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${dir.path}/README.md?ref=${repo.branch}`);
+              if (readmeResp.ok) {
+                const readmeData = await readmeResp.json();
+                const decoded = atob(readmeData.content);
+                const firstLine = decoded.split("\n").find((l: string) => l.trim() && !l.startsWith("#"));
+                description = firstLine?.trim().slice(0, 200) || "";
+              }
+            } catch { /* ignore */ }
+            const { error } = await supabase.from("skills").insert({ name: dir.name, description, repo_id: repo.id, user_id: user!.id });
+            if (!error) totalCount++;
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    setScanningAll(false);
+    setScanningRepoId(null);
+    queryClient.invalidateQueries({ queryKey: ["skills"] });
+    toast({ title: `一键扫描完成`, description: `共新增 ${totalCount} 个 Skills` });
+  };
+
   const addPresetRepo = (preset: { owner: string; repo: string; branch?: string }) => {
     createRepoMutation.mutate({ owner: preset.owner, repo: preset.repo, branch: preset.branch || "main", subdirectory: "", is_default: false });
   };
@@ -403,6 +447,17 @@ export default function Skills() {
 
         <TabsContent value="repos" className="mt-4 space-y-4">
           <div className="flex items-center gap-2">
+            {repos.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={scanAllSkills}
+                disabled={scanningAll || scanningRepoId !== null}
+              >
+                {scanningAll ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="mr-1.5 h-3.5 w-3.5" />}
+                一键扫描
+              </Button>
+            )}
             <Dialog open={repoDialogOpen} onOpenChange={setRepoDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm"><Plus className="mr-1 h-4 w-4" />{t("skills.addRepo")}</Button>
@@ -470,7 +525,7 @@ export default function Skills() {
                     <div className="flex gap-1">
                       <Button
                         variant="ghost" size="icon" className="h-7 w-7"
-                        disabled={scanningRepoId === repo.id}
+                        disabled={scanningRepoId === repo.id || scanningAll}
                         onClick={() => scanSkills(repo)}
                         title={t("skills.scanSkills")}
                       >
@@ -479,7 +534,10 @@ export default function Skills() {
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingRepo(repo)}>
                         <Pencil className="h-3 w-3" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRepoMutation.mutate(repo.id)}>
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                        onClick={() => setDeleteRepoTarget(repo)}
+                      >
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
@@ -507,6 +565,30 @@ export default function Skills() {
               )}
             </DialogContent>
           </Dialog>
+
+          {/* Delete Repo Confirm Dialog */}
+          <AlertDialog open={!!deleteRepoTarget} onOpenChange={(open) => !open && setDeleteRepoTarget(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>确认删除仓库</AlertDialogTitle>
+                <AlertDialogDescription>
+                  确定要删除仓库「<strong>{deleteRepoTarget?.owner}/{deleteRepoTarget?.repo}</strong>」及其所有 Skills 吗？此操作不可撤销。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => {
+                    if (deleteRepoTarget) deleteRepoMutation.mutate(deleteRepoTarget.id);
+                    setDeleteRepoTarget(null);
+                  }}
+                >
+                  删除
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TabsContent>
 
         <TabsContent value="skills" className="mt-4 space-y-3">
