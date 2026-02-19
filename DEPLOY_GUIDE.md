@@ -99,24 +99,30 @@ var base = '/你的仓库名';   // ← 改为实际仓库名（不加结尾斜�
 
 ### 步骤 1 — 获取 Cloudflare API Token
 
+> ⚠️ **常见错误**：不要使用 "Edit Cloudflare Workers" 模板，该模板**不包含** Pages 权限，会导致 wrangler-action 以 exit code 1 失败！
+
 1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
 2. 右上角头像 → **My Profile** → **API Tokens** → **Create Token**
-3. 使用模板 **"Edit Cloudflare Workers"** 或自定义，权限至少包含：
+3. 选择 **"Create Custom Token"**（自定义），添加以下权限：
    - `Account` → `Cloudflare Pages` → `Edit`
-4. 创建后复制 Token（**只显示一次**）
+4. "Account Resources" 选择你的账号，其余保持默认
+5. 点击 **Continue to summary** → **Create Token**，复制 Token（**只显示一次**）
 
 ### 步骤 2 — 获取 Account ID
 
-在 Cloudflare Dashboard 右侧栏可以找到 **Account ID**，复制备用。
+1. 访问 [Cloudflare Dashboard](https://dash.cloudflare.com)
+2. 点击左侧 **Workers & Pages**
+3. 在右侧边栏找到 **Account ID**，复制备用
 
 ### 步骤 3 — 在 Cloudflare Dashboard 创建 Pages 项目
 
 ```
-Cloudflare Dashboard → Workers & Pages → Create → Pages → Direct Upload
+Cloudflare Dashboard → Workers & Pages → 创建应用 → Get Started → Get Started
+→ 创建项目（输入项目名）→ 上传项目（随意，后续 CI 会自动覆盖）
 ```
 
-- **Project name 填写**：`ai-helper`（必须与工作流中 `--project-name=ai-helper` 完全一致）
-- 上传随意，后续 CI 会覆盖
+- **Project name 必须填写**：`ai-helper`（必须与工作流中 `--project-name=ai-helper` 完全一致，区分大小写）
+- 上传文件随意，CI/CD 部署时会自动覆盖
 
 ### 步骤 4 — 添加 GitHub Secrets
 
@@ -201,6 +207,18 @@ Vite 在**构建阶段**将 `VITE_*` 变量静态替换到产物中，因此 CI 
 1. `deploy-pages.yml` → `VITE_BASE_URL: /aix-helper/`
 2. `public/404.html` → `var base = '/aix-helper'`
 3. 浏览器访问地址确实含 `/aix-helper/` 子路径
+
+### Q: Cloudflare 部署失败，wrangler-action exit code 1？
+
+这是最常见的报错，**99% 原因是 API Token 权限不足**。
+
+排查清单：
+
+1. **Token 权限**：进入 Cloudflare → My Profile → API Tokens，检查该 Token 是否有 `Account > Cloudflare Pages > Edit` 权限
+   - ❌ 使用了 "Edit Cloudflare Workers" 模板（不含 Pages 权限）
+   - ✅ 使用自定义 Token，手动勾选 `Cloudflare Pages: Edit`
+2. **重新生成 Token**：如不确定，删除旧 Token，按步骤 1 重新创建，更新 GitHub Secret 中的 `CLOUDFLARE_API_TOKEN`
+3. **Pages 项目是否已创建**：确认在 Cloudflare Dashboard 中已手动创建名为 `ai-helper` 的 Pages 项目（见步骤 3）
 
 ### Q: Cloudflare 部署失败，提示 project not found？
 
