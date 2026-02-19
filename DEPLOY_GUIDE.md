@@ -33,23 +33,26 @@
 
 ## 方案一：GitHub Pages
 
-### 步骤 1 — 确认仓库名
+### 步骤 1 — 确认仓库类型（重要！）
 
-GitHub Pages 的访问地址格式为：
+GitHub Pages 有**两种**部署类型，配置完全不同：
 
-```
-https://<你的用户名>.github.io/<仓库名>/
-```
+| 仓库类型 | 访问地址 | `VITE_BASE_URL` | `404.html` 的 `base` |
+|----------|----------|-----------------|----------------------|
+| **用户/组织级**（仓库名为 `username.github.io`） | `https://username.github.io/` | `/` | `''`（空字符串） |
+| **项目级**（普通仓库名，如 `aix-helper`） | `https://username.github.io/aix-helper/` | `/aix-helper/` | `'/aix-helper'` |
 
-**⚠️ 重要**：工作流中已将 `VITE_BASE_URL` 设置为 `/ai-helper/`。  
-如果你的 GitHub 仓库名**不是** `ai-helper`，必须修改以下两处：
+> **如何判断**：看部署后的访问 URL。如果路径里**没有**仓库名前缀，说明是用户级 Pages，base 就是 `/`。
 
-**文件 1**：`.github/workflows/deploy-pages.yml` 第 35 行
+⚠️ **本项目当前配置为用户/组织级（base = `/`）**。  
+如果你使用的是项目级仓库，需要修改以下两处：
+
+**文件 1**：`.github/workflows/deploy-pages.yml`
 ```yaml
-VITE_BASE_URL: /你的仓库名/   # ← 改为实际仓库名
+VITE_BASE_URL: /你的仓库名/   # ← 改为实际仓库名（含前后斜杠）
 ```
 
-**文件 2**：`public/404.html` 第 9 行
+**文件 2**：`public/404.html`
 ```javascript
 var base = '/你的仓库名';   // ← 改为实际仓库名（不加结尾斜杠）
 ```
@@ -179,9 +182,13 @@ Vite 在**构建阶段**将 `VITE_*` 变量静态替换到产物中，因此 CI 
 
 ### Q: GitHub Pages 部署后刷新页面出现 404？
 
-检查：
-1. `public/404.html` 中的 `base` 变量是否与仓库名一致
-2. `deploy-pages.yml` 中 `VITE_BASE_URL` 是否与仓库名一致（含前后斜杠，如 `/ai-helper/`）
+这是 SPA + GitHub Pages 的经典问题。排查步骤：
+
+1. **先判断仓库类型**（见步骤 1 表格）：用户级 Pages（`username.github.io`）base 为空 `''`；项目级 Pages base 为 `'/仓库名'`
+2. 确认 `public/404.html` 中的 `base` 变量与实际访问路径匹配
+3. 确认 `deploy-pages.yml` 中 `VITE_BASE_URL` 与 `404.html` 中 `base` 保持一致
+
+**常见错误**：把用户级 Pages（访问地址无仓库名前缀）当项目级配置，把 `base` 设成了 `'/仓库名'`，导致重定向路径错误。
 
 ### Q: Cloudflare 部署失败，提示 project not found？
 

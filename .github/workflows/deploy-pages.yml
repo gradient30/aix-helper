@@ -35,7 +35,9 @@ jobs:
         env:
           # 必须与 GitHub 仓库名完全一致（含大小写）
           # 例如仓库为 https://github.com/username/ai-helper，则填 /ai-helper/
-          VITE_BASE_URL: /aix-helper/
+          # 用户/组织级 Pages（仓库名为 username.github.io）部署在根路径，base 为 /
+          # 如果是普通项目仓库（如 /aix-helper/），改为对应仓库名
+          VITE_BASE_URL: /
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
