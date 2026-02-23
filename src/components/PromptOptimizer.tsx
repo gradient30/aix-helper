@@ -17,6 +17,7 @@ import {
   BookOpen, Lightbulb, Palette
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { getErrorMessage } from "@/lib/errors";
 
 const OPTIMIZE_TEMPLATES = [
   { value: "general", label: "通用优化", labelEn: "General", icon: Sparkles },
@@ -43,13 +44,32 @@ type HistoryItem = {
   created_at: string;
 };
 
+type OptimizerAction = "optimize" | "iterate" | "evaluate";
+type PromptMode = "system" | "user";
+type SaveTarget = (typeof TARGET_FILES)[number]["value"];
+
+type OptimizeRequest = {
+  action: OptimizerAction;
+  prompt: string;
+  optimizedPrompt?: string;
+  template?: string;
+  mode?: PromptMode;
+  feedback?: string;
+};
+
+type OptimizeResponse = {
+  result: string;
+  analysis?: string;
+  error?: string;
+};
+
 export default function PromptOptimizer() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const isZh = i18n.language === "zh";
 
-  const [mode, setMode] = useState<"system" | "user">("system");
+  const [mode, setMode] = useState<PromptMode>("system");
   const [originalPrompt, setOriginalPrompt] = useState("");
   const [optimizedPrompt, setOptimizedPrompt] = useState("");
   const [template, setTemplate] = useState("general");
@@ -58,7 +78,7 @@ export default function PromptOptimizer() {
   const [showIterate, setShowIterate] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
-  const [saveTarget, setSaveTarget] = useState("CLAUDE.md");
+  const [saveTarget, setSaveTarget] = useState<SaveTarget>("CLAUDE.md");
 
   // Fetch history
   const { data: history = [] } = useQuery({
@@ -77,20 +97,14 @@ export default function PromptOptimizer() {
 
   // Optimize mutation
   const optimizeMutation = useMutation({
-    mutationFn: async (params: {
-      action: string;
-      prompt: string;
-      optimizedPrompt?: string;
-      template?: string;
-      mode?: string;
-      feedback?: string;
-    }) => {
+    mutationFn: async (params: OptimizeRequest) => {
       const { data, error } = await supabase.functions.invoke("optimize-prompt", {
         body: params,
       });
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data as { result: string; analysis?: string };
+      const typedData = data as OptimizeResponse;
+      if (typedData?.error) throw new Error(typedData.error);
+      return typedData;
     },
     onSuccess: (data, variables) => {
       if (variables.action === "evaluate") {
@@ -106,7 +120,7 @@ export default function PromptOptimizer() {
     onError: (e) => {
       toast({
         title: isZh ? "操作失败" : "Operation failed",
-        description: e.message,
+        description: getErrorMessage(e),
         variant: "destructive",
       });
     },
@@ -131,7 +145,11 @@ export default function PromptOptimizer() {
       toast({ title: isZh ? "已保存为 Prompt" : "Saved as Prompt" });
     },
     onError: (e) => {
-      toast({ title: isZh ? "保存失败" : "Save failed", description: e.message, variant: "destructive" });
+      toast({
+        title: isZh ? "保存失败" : "Save failed",
+        description: getErrorMessage(e),
+        variant: "destructive",
+      });
     },
   });
 

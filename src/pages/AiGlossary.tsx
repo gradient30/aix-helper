@@ -1,141 +1,168 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Bot, GitFork, Users, BookOpen, Server, Radio, Code2, Database, GitBranch, MessageSquare,
-  ChevronDown, ChevronUp, Search, Lightbulb, Zap, Target, Link2,
-  Cpu, Sparkles, Globe, BrainCircuit, Layers
+  Bot,
+  BrainCircuit,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  GitFork,
+  Link2,
+  Search,
+  Server,
+  Sparkles,
+  Target,
+  Wrench,
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  AI_CONCEPTS,
+  AI_PARADIGMS,
+  AI_TECH_REPO_CATEGORIES,
+  AI_TOP_REPOS_SNAPSHOT,
+  type AiConceptItem,
+  type AiConceptTabId,
+  type AiRepoCategory,
+} from "@/config/ai-tech-catalog";
 import type { LucideIcon } from "lucide-react";
 
-interface GlossarySection {
-  titleKey: string;
-  contentKey: string;
-  badge: "concept" | "function" | "scenario" | "relation";
-  icon: LucideIcon;
-}
+type MainTab = AiConceptTabId | "paradigms" | "top-repos";
 
-interface GlossaryConcept {
-  id: string;
-  titleKey: string;
-  subtitleKey: string;
-  icon: LucideIcon;
-  sections: GlossarySection[];
-}
-
-interface GlossaryTab {
-  id: string;
-  nameKey: string;
-  concepts: GlossaryConcept[];
-}
-
-const badgeConfig: Record<string, { className: string; icon: LucideIcon }> = {
-  concept: { className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800", icon: Lightbulb },
-  function: { className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800", icon: Zap },
-  scenario: { className: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200 dark:border-orange-800", icon: Target },
-  relation: { className: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800", icon: Link2 },
-};
-
-function makeSections(id: string): GlossarySection[] {
-  return [
-    { titleKey: `aiGlossary.${id}.definition`, contentKey: `aiGlossary.${id}.definitionContent`, badge: "concept", icon: Lightbulb },
-    { titleKey: `aiGlossary.${id}.function`, contentKey: `aiGlossary.${id}.functionContent`, badge: "function", icon: Zap },
-    { titleKey: `aiGlossary.${id}.scenario`, contentKey: `aiGlossary.${id}.scenarioContent`, badge: "scenario", icon: Target },
-    { titleKey: `aiGlossary.${id}.relation`, contentKey: `aiGlossary.${id}.relationContent`, badge: "relation", icon: Link2 },
-  ];
-}
-
-const glossaryTabs: GlossaryTab[] = [
-  {
-    id: "agent-system",
-    nameKey: "aiGlossary.tabs.agentSystem",
-    concepts: [
-      { id: "agent", titleKey: "aiGlossary.agent.title", subtitleKey: "aiGlossary.agent.subtitle", icon: Bot, sections: makeSections("agent") },
-      { id: "sub-agent", titleKey: "aiGlossary.subAgent.title", subtitleKey: "aiGlossary.subAgent.subtitle", icon: GitFork, sections: makeSections("subAgent") },
-      { id: "agent-team", titleKey: "aiGlossary.agentTeam.title", subtitleKey: "aiGlossary.agentTeam.subtitle", icon: Users, sections: makeSections("agentTeam") },
-      { id: "skills", titleKey: "aiGlossary.skills.title", subtitleKey: "aiGlossary.skills.subtitle", icon: BookOpen, sections: makeSections("skills") },
-    ],
-  },
-  {
-    id: "protocols",
-    nameKey: "aiGlossary.tabs.protocols",
-    concepts: [
-      { id: "mcp", titleKey: "aiGlossary.mcp.title", subtitleKey: "aiGlossary.mcp.subtitle", icon: Server, sections: makeSections("mcp") },
-      { id: "acp", titleKey: "aiGlossary.acp.title", subtitleKey: "aiGlossary.acp.subtitle", icon: Radio, sections: makeSections("acp") },
-      { id: "lsp", titleKey: "aiGlossary.lsp.title", subtitleKey: "aiGlossary.lsp.subtitle", icon: Code2, sections: makeSections("lsp") },
-    ],
-  },
-  {
-    id: "methods",
-    nameKey: "aiGlossary.tabs.methods",
-    concepts: [
-      { id: "rag", titleKey: "aiGlossary.rag.title", subtitleKey: "aiGlossary.rag.subtitle", icon: Database, sections: makeSections("rag") },
-      { id: "workflow", titleKey: "aiGlossary.workflow.title", subtitleKey: "aiGlossary.workflow.subtitle", icon: GitBranch, sections: makeSections("workflow") },
-      { id: "prompt", titleKey: "aiGlossary.prompt.title", subtitleKey: "aiGlossary.prompt.subtitle", icon: MessageSquare, sections: makeSections("prompt") },
-    ],
-  },
-  {
-    id: "models",
-    nameKey: "aiGlossary.tabs.models",
-    concepts: [
-      { id: "anthropic", titleKey: "aiGlossary.anthropic.title", subtitleKey: "aiGlossary.anthropic.subtitle", icon: Sparkles, sections: makeSections("anthropic") },
-      { id: "openai", titleKey: "aiGlossary.openai.title", subtitleKey: "aiGlossary.openai.subtitle", icon: BrainCircuit, sections: makeSections("openai") },
-      { id: "google", titleKey: "aiGlossary.google.title", subtitleKey: "aiGlossary.google.subtitle", icon: Globe, sections: makeSections("google") },
-      { id: "meta", titleKey: "aiGlossary.meta.title", subtitleKey: "aiGlossary.meta.subtitle", icon: Layers, sections: makeSections("meta") },
-      { id: "chinese", titleKey: "aiGlossary.chinese.title", subtitleKey: "aiGlossary.chinese.subtitle", icon: Cpu, sections: makeSections("chinese") },
-      { id: "specialized", titleKey: "aiGlossary.specialized.title", subtitleKey: "aiGlossary.specialized.subtitle", icon: Zap, sections: makeSections("specialized") },
-    ],
-  },
+const MAIN_TABS: MainTab[] = [
+  "agent-system",
+  "protocols",
+  "methods",
+  "models",
+  "paradigms",
+  "top-repos",
 ];
 
+const TAB_TRANSLATION_KEYS: Record<MainTab, string> = {
+  "agent-system": "aiGlossary.tabs.agentSystem",
+  protocols: "aiGlossary.tabs.protocols",
+  methods: "aiGlossary.tabs.methods",
+  models: "aiGlossary.tabs.models",
+  paradigms: "aiGlossary.tabs.paradigms",
+  "top-repos": "aiGlossary.tabs.topRepos",
+};
+
+const CONCEPT_ICON: Record<string, LucideIcon> = {
+  agent: Bot,
+  "sub-agent": GitFork,
+  skills: Wrench,
+  mcp: Server,
+  a2a: Link2,
+  lsp: Wrench,
+  rag: Search,
+  workflow: Target,
+  "eval-loop": Sparkles,
+  "model-routing": BrainCircuit,
+  "multimodal-reasoning": Sparkles,
+  slm: Bot,
+};
+
+function levelBadge(level: "official" | "community") {
+  if (level === "official") {
+    return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30">official</Badge>;
+  }
+  return <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30">community</Badge>;
+}
+
 export default function AiGlossary() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage === "en" ? "en" : "zh";
+  const [activeTab, setActiveTab] = useState<MainTab>("agent-system");
+  const [activeRepoCategory, setActiveRepoCategory] = useState<AiRepoCategory>(AI_TECH_REPO_CATEGORIES[0].id);
   const [search, setSearch] = useState("");
   const [openItems, setOpenItems] = useState<string[]>([]);
 
-  const filteredTabs = useMemo(() => {
-    if (!search.trim()) return glossaryTabs;
-    const q = search.toLowerCase();
-    return glossaryTabs.map(tab => ({
-      ...tab,
-      concepts: tab.concepts.filter(c => {
-        const title = t(c.titleKey).toLowerCase();
-        const subtitle = t(c.subtitleKey).toLowerCase();
-        const sectionMatch = c.sections.some(s => t(s.contentKey).toLowerCase().includes(q));
-        return title.includes(q) || subtitle.includes(q) || sectionMatch;
-      }),
-    }));
-  }, [search, t]);
+  const conceptsByTab = useMemo(() => {
+    const grouped: Record<AiConceptTabId, AiConceptItem[]> = {
+      "agent-system": [],
+      protocols: [],
+      methods: [],
+      models: [],
+    };
+    for (const item of AI_CONCEPTS) grouped[item.tab].push(item);
+    return grouped;
+  }, []);
 
-  const totalCount = glossaryTabs.reduce((s, tab) => s + tab.concepts.length, 0);
-  const filteredCount = filteredTabs.reduce((s, tab) => s + tab.concepts.length, 0);
+  const filteredConcepts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return conceptsByTab;
+    const grouped: Record<AiConceptTabId, AiConceptItem[]> = {
+      "agent-system": [],
+      protocols: [],
+      methods: [],
+      models: [],
+    };
+    (Object.keys(conceptsByTab) as AiConceptTabId[]).forEach((tab) => {
+      grouped[tab] = conceptsByTab[tab].filter((item) => {
+        const inTitle = item.title[locale].toLowerCase().includes(q) || item.subtitle[locale].toLowerCase().includes(q);
+        const inBody = item.sections.some((section) => section.content[locale].toLowerCase().includes(q));
+        return inTitle || inBody;
+      });
+    });
+    return grouped;
+  }, [conceptsByTab, search, locale]);
 
-  const allConceptIds = glossaryTabs.flatMap(tab => tab.concepts.map(c => c.id));
+  const filteredParadigms = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return AI_PARADIGMS;
+    return AI_PARADIGMS.filter((item) =>
+      item.title[locale].toLowerCase().includes(q) ||
+      item.summary[locale].toLowerCase().includes(q) ||
+      item.scenario[locale].toLowerCase().includes(q),
+    );
+  }, [search, locale]);
 
-  const expandAll = () => setOpenItems(allConceptIds);
-  const collapseAll = () => setOpenItems([]);
+  const filteredTopRepos = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const records = AI_TOP_REPOS_SNAPSHOT.categories[activeRepoCategory];
+    if (!q) return records;
+    return records.filter((repo) =>
+      repo.full_name.toLowerCase().includes(q) ||
+      repo.recommendation_note[locale].toLowerCase().includes(q) ||
+      repo.app_scenarios[locale].toLowerCase().includes(q),
+    );
+  }, [search, locale, activeRepoCategory]);
+
+  const allConceptIds = useMemo(
+    () => AI_CONCEPTS.map((item) => item.id),
+    [],
+  );
+
+  const activeConceptCount = (activeTab === "agent-system" || activeTab === "protocols" || activeTab === "methods" || activeTab === "models")
+    ? filteredConcepts[activeTab].length
+    : 0;
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">{t("aiGlossary.title")}</h1>
-        <p className="text-muted-foreground mt-1">{t("aiGlossary.subtitle")} · <span className="text-xs font-mono text-primary/70">Updated Feb 2026</span></p>
+        <p className="text-muted-foreground">{t("aiGlossary.subtitle")}</p>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant="outline">last_verified_at: {AI_TOP_REPOS_SNAPSHOT.baseline_date}</Badge>
+          <span>{t("aiGlossary.policyOfficialFirst")}</span>
+        </div>
       </div>
 
-      <Tabs defaultValue="agent-system">
-        <TabsList>
-          {glossaryTabs.map(tab => (
-            <TabsTrigger key={tab.id} value={tab.id}>{t(tab.nameKey)}</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as MainTab)}>
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 h-auto gap-1">
+          {MAIN_TABS.map((tab) => (
+            <TabsTrigger key={tab} value={tab} className="text-xs sm:text-sm py-2.5">
+              {t(TAB_TRANSLATION_KEYS[tab])}
+            </TabsTrigger>
           ))}
         </TabsList>
 
@@ -145,78 +172,166 @@ export default function AiGlossary() {
             <Input
               placeholder={t("aiGlossary.searchPlaceholder")}
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={expandAll}>
-              <ChevronDown className="mr-1 h-4 w-4" />
-              {t("aiGlossary.expandAll")}
-            </Button>
-            <Button variant="outline" size="sm" onClick={collapseAll}>
-              <ChevronUp className="mr-1 h-4 w-4" />
-              {t("aiGlossary.collapseAll")}
-            </Button>
-          </div>
+          {(activeTab === "agent-system" || activeTab === "protocols" || activeTab === "methods" || activeTab === "models") && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setOpenItems(allConceptIds)}>
+                <ChevronDown className="mr-1 h-4 w-4" />
+                {t("aiGlossary.expandAll")}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setOpenItems([])}>
+                <ChevronUp className="mr-1 h-4 w-4" />
+                {t("aiGlossary.collapseAll")}
+              </Button>
+            </div>
+          )}
         </div>
 
-        <p className="text-sm text-muted-foreground mt-2">
-          {t("aiGlossary.showing")} {filteredCount} / {t("aiGlossary.total")} {totalCount} {t("aiGlossary.items")}
-        </p>
+        {(activeTab === "agent-system" || activeTab === "protocols" || activeTab === "methods" || activeTab === "models") && (
+          <p className="text-sm text-muted-foreground mt-2">
+            {t("aiGlossary.showing")} {activeConceptCount} {t("aiGlossary.items")}
+          </p>
+        )}
 
-        {glossaryTabs.map(tab => (
-          <TabsContent key={tab.id} value={tab.id}>
-            {filteredTabs.find(ft => ft.id === tab.id)?.concepts.length === 0 ? (
+        {(Object.keys(filteredConcepts) as AiConceptTabId[]).map((tab) => (
+          <TabsContent key={tab} value={tab} className="space-y-3">
+            {filteredConcepts[tab].length === 0 ? (
               <p className="text-muted-foreground text-center py-8">{t("aiGlossary.noResults")}</p>
             ) : (
-              <Accordion
-                type="multiple"
-                value={openItems}
-                onValueChange={setOpenItems}
-                className="space-y-3"
-              >
-                {filteredTabs.find(ft => ft.id === tab.id)?.concepts.map(concept => (
-                  <AccordionItem key={concept.id} value={concept.id} className="border rounded-lg px-4">
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                          <concept.icon className="h-5 w-5 text-primary" />
+              <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="space-y-3">
+                {filteredConcepts[tab].map((concept) => {
+                  const Icon = CONCEPT_ICON[concept.id] || Sparkles;
+                  return (
+                    <AccordionItem key={concept.id} value={concept.id} className="border rounded-lg px-4">
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                            <Icon className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="text-left">
+                            <span className="font-semibold">{concept.title[locale]}</span>
+                            <span className="text-muted-foreground text-sm ml-2">{concept.subtitle[locale]}</span>
+                          </div>
+                          {levelBadge(concept.support_level)}
                         </div>
-                        <div className="text-left">
-                          <span className="font-semibold">{t(concept.titleKey)}</span>
-                          <span className="text-muted-foreground text-sm ml-2">{t(concept.subtitleKey)}</span>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                        {concept.sections.map(section => {
-                          const cfg = badgeConfig[section.badge];
-                          return (
-                            <Card key={section.badge} className="border">
-                              <CardContent className="p-4 space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <Badge className={cfg.className}>
-                                    <cfg.icon className="h-3 w-3 mr-1" />
-                                    {t(section.titleKey)}
-                                  </Badge>
-                                </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                          {concept.sections.map((section) => (
+                            <Card key={`${concept.id}-${section.kind}`} className="border">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm flex items-center justify-between gap-2">
+                                  <span>{section.title[locale]}</span>
+                                  <a href={section.verification.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
+                                    source
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-2 pt-0">
                                 <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-                                  {t(section.contentKey)}
+                                  {section.content[locale]}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  last_verified_at: {section.verification.last_verified_at}
                                 </p>
                               </CardContent>
                             </Card>
-                          );
-                        })}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
               </Accordion>
             )}
           </TabsContent>
         ))}
+
+        <TabsContent value="paradigms" className="space-y-3">
+          {filteredParadigms.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">{t("aiGlossary.noResults")}</p>
+          ) : (
+            filteredParadigms.map((item) => (
+              <Card key={item.id}>
+                <CardHeader className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CardTitle className="text-base">{item.title[locale]}</CardTitle>
+                    {levelBadge(item.support_level)}
+                    <Badge variant="outline">{t("aiGlossary.introducedAt")}: {item.introduced_at}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="text-muted-foreground">{item.summary[locale]}</p>
+                  <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground">{t("aiGlossary.applicationScenario")}:</span> {item.scenario[locale]}
+                  </p>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <a className="inline-flex items-center gap-1 text-primary hover:underline" href={item.official_source.source_url} target="_blank" rel="noopener noreferrer">
+                      official source
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <p>last_verified_at: {item.official_source.last_verified_at}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="top-repos" className="space-y-4">
+          <Card className="p-4 space-y-3">
+            <div className="text-sm text-muted-foreground">{AI_TOP_REPOS_SNAPSHOT.rank_policy[locale]}</div>
+            <div className="text-xs text-muted-foreground">{AI_TOP_REPOS_SNAPSHOT.source_policy[locale]}</div>
+          </Card>
+
+          <Tabs value={activeRepoCategory} onValueChange={(v) => setActiveRepoCategory(v as AiRepoCategory)}>
+            <TabsList className="grid w-full grid-cols-1 md:grid-cols-5 h-auto gap-1">
+              {AI_TECH_REPO_CATEGORIES.map((category) => (
+                <TabsTrigger key={category.id} value={category.id} className="text-xs py-2.5">
+                  {category.label[locale]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {AI_TECH_REPO_CATEGORIES.map((category) => (
+              <TabsContent key={category.id} value={category.id} className="space-y-3">
+                <p className="text-sm text-muted-foreground">{category.description[locale]}</p>
+                {filteredTopRepos.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">{t("aiGlossary.noResults")}</p>
+                ) : (
+                  filteredTopRepos.map((repo) => (
+                    <Card key={`${repo.category}-${repo.rank}-${repo.full_name}`}>
+                      <CardContent className="p-4 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline">#{repo.rank}</Badge>
+                          <a href={repo.repo_url} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline inline-flex items-center gap-1">
+                            {repo.full_name}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                          <Badge variant="secondary">★ {repo.stars.toLocaleString()}</Badge>
+                          <Badge variant="outline">{t("aiGlossary.recommendedStars")}: {repo.recommended_stars}/5</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-medium text-foreground">{t("aiGlossary.recommendation")}:</span> {repo.recommendation_note[locale]}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-medium text-foreground">{t("aiGlossary.applicationScenario")}:</span> {repo.app_scenarios[locale]}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          pushed_at: {repo.pushed_at.slice(0, 10)} · last_verified_at: {repo.verification.last_verified_at}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </TabsContent>
       </Tabs>
     </div>
   );

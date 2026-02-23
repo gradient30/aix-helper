@@ -7,201 +7,108 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { Download, Upload, Link2, Package, Database, FileArchive, Copy, Loader2, CheckCircle2, FileCode, FileText, Settings } from "lucide-react";
 import { HelpDialog } from "@/components/HelpDialog";
 import { useTranslation } from "react-i18next";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { getErrorMessage } from "@/lib/errors";
+import {
+  buildClaudeSettingsJson,
+  buildDeepLinkPayload,
+  buildMcpServersObject,
+  buildSkillMd,
+  encodeDeepLinkPayload,
+  generateCodexConfigToml,
+  getAppStats,
+  sanitizeMcpForBackup,
+  sanitizeProviderForBackup,
+  stripDbFields,
+  type AppType,
+  type McpServer,
+  type Prompt,
+  type Provider,
+  type Skill,
+  type SkillsRepo,
+} from "@/lib/export-utils";
+import { parseImportData } from "@/lib/import-utils";
 
-// ─── helpers ────────────────────────────────────────────────────────────────
-
-/** Build mcpServers object (Claude / Gemini / Codex format) */
-function buildMcpServersObject(mcps: any[]): Record<string, any> {
-  const result: Record<string, any> = {};
-  mcps.forEach((m) => {
-    if (m.transport_type === "stdio") {
-      const entry: any = { command: m.command, args: Array.isArray(m.args) ? m.args : [] };
-      if (m.env && typeof m.env === "object" && Object.keys(m.env).length > 0) {
-        entry.env = m.env;
-      }
-      result[m.name] = entry;
-    } else {
-      // http / sse
-      const entry: any = { type: m.transport_type, url: m.url };
-      result[m.name] = entry;
-    }
-  });
-  return result;
-}
-
-/** Generate SKILL.md content from skill record */
-function generateSkillMd(skill: { name: string; description: string | null }): string {
-  const description = skill.description || "";
-  return `---
-name: ${skill.name}
-description: ${description}
-version: "1.0"
-tags: []
----
-
-# ${skill.name}
-
-${description}
-`;
-}
-
-/** Build Claude Code settings.json — merges MCP + Provider env fields */
-function buildClaudeSettingsJson(mcps: any[], providers: any[]): object {
-  const result: any = {
-    $schema: "https://json.schemastore.org/claude-code-settings.json",
-  };
-
-  // Custom (non-official) enabled provider → write into env block
-  const customProvider = providers.find((p) => p.provider_type !== "official" && p.enabled);
-  if (customProvider) {
-    result.env = {} as Record<string, string>;
-    if (customProvider.api_key) result.env["ANTHROPIC_AUTH_TOKEN"] = customProvider.api_key;
-    if (customProvider.base_url) result.env["ANTHROPIC_BASE_URL"] = customProvider.base_url;
-    // Extract model from model_config if present
-    const modelId =
-      customProvider.model_config &&
-      typeof customProvider.model_config === "object" &&
-      (customProvider.model_config as any).model;
-    if (modelId) {
-      result.env["ANTHROPIC_MODEL"] = modelId;
-      result.env["ANTHROPIC_DEFAULT_SONNET_MODEL"] = modelId;
-      result.env["ANTHROPIC_DEFAULT_HAIKU_MODEL"] = modelId;
-      result.env["ANTHROPIC_DEFAULT_OPUS_MODEL"] = modelId;
-      result.model = modelId;
-    }
-  }
-
-  result.permissions = { allow: ["*"], deny: [] };
-
-  const mcpServersObj = buildMcpServersObject(mcps);
-  if (Object.keys(mcpServersObj).length > 0) {
-    result.mcpServers = mcpServersObj;
-  }
-
-  return result;
-}
-
-/** Generate Codex config.toml — TOML format, MCP inline as [mcp_servers.name] */
-function generateCodexConfigToml(providers: any[], mcps: any[]): string {
-  const lines: string[] = [
-    "# CC Switch - Codex CLI 配置",
-    "# 放置路径: ~/.codex/config.toml",
-    "",
-  ];
-
-  // Top-level model / provider from enabled custom provider
-  const customProvider = providers.find((p) => p.provider_type !== "official" && p.enabled);
-  const modelId =
-    customProvider?.model_config &&
-    typeof customProvider.model_config === "object" &&
-    (customProvider.model_config as any).model;
-
-  lines.push(`model = "${modelId || "o4-mini"}"`);
-  if (customProvider?.api_key) {
-    lines.push(`api_key = "${customProvider.api_key}"`);
-  }
-  if (customProvider?.base_url) {
-    lines.push(`provider_base_url = "${customProvider.base_url}"`);
-  }
-
-  // MCP Servers — embedded as [mcp_servers.<name>] tables
-  mcps.forEach((m) => {
-    lines.push("");
-    // Sanitize key: TOML keys cannot have spaces or special chars
-    const key = m.name.replace(/[^a-zA-Z0-9_-]/g, "_");
-    lines.push(`[mcp_servers.${key}]`);
-    if (m.transport_type === "stdio") {
-      lines.push(`type = "stdio"`);
-      if (m.command) lines.push(`command = "${m.command}"`);
-      const args = (Array.isArray(m.args) ? m.args : [])
-        .map((a: string) => `"${String(a).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`)
-        .join(", ");
-      lines.push(`args = [${args}]`);
-    } else {
-      // http / sse — only url, no type field (per real config.toml spec)
-      lines.push(`url = "${m.url}"`);
-    }
-    if (m.env && typeof m.env === "object" && Object.keys(m.env).length > 0) {
-      Object.entries(m.env).forEach(([k, v]) => {
-        lines.push(`env.${k} = "${String(v).replace(/"/g, '\\"')}"`);
-      });
-    }
-  });
-
-  return lines.join("\n") + "\n";
-}
+type ExportingTarget = AppType | "backup" | null;
 
 // ─── component ───────────────────────────────────────────────────────────────
 
 export default function Export() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [exporting, setExporting] = useState<string | null>(null);
+  const [exporting, setExporting] = useState<ExportingTarget>(null);
   const [importing, setImporting] = useState(false);
   const [deepLink, setDeepLink] = useState("");
+  const [includeSecrets, setIncludeSecrets] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: providers = [] } = useQuery({
+  const { data: providers = [] } = useQuery<Provider[]>({
     queryKey: ["providers"],
     queryFn: async () => {
-      const { data } = await supabase.from("providers").select("*").order("sort_order");
+      const { data, error } = await supabase
+        .from("providers")
+        .select("*")
+        .order("sort_order");
+      if (error) throw error;
       return data || [];
     },
     enabled: !!user,
   });
 
-  const { data: mcpServers = [] } = useQuery({
+  const { data: mcpServers = [] } = useQuery<McpServer[]>({
     queryKey: ["mcp_servers"],
     queryFn: async () => {
-      const { data } = await supabase.from("mcp_servers").select("*").order("created_at");
+      const { data, error } = await supabase
+        .from("mcp_servers")
+        .select("*")
+        .order("created_at");
+      if (error) throw error;
       return data || [];
     },
     enabled: !!user,
   });
 
-  const { data: prompts = [] } = useQuery({
+  const { data: prompts = [] } = useQuery<Prompt[]>({
     queryKey: ["prompts"],
     queryFn: async () => {
-      const { data } = await supabase.from("prompts").select("*").order("created_at");
+      const { data, error } = await supabase
+        .from("prompts")
+        .select("*")
+        .order("created_at");
+      if (error) throw error;
       return data || [];
     },
     enabled: !!user,
   });
 
-  const { data: skills = [] } = useQuery({
+  const { data: skills = [] } = useQuery<Skill[]>({
     queryKey: ["skills"],
     queryFn: async () => {
-      const { data } = await supabase.from("skills").select("*").order("name");
+      const { data, error } = await supabase.from("skills").select("*").order("name");
+      if (error) throw error;
       return data || [];
     },
     enabled: !!user,
   });
 
-  const { data: skillsRepos = [] } = useQuery({
+  const { data: skillsRepos = [] } = useQuery<SkillsRepo[]>({
     queryKey: ["skills_repos"],
     queryFn: async () => {
-      const { data } = await supabase.from("skills_repos").select("*").order("created_at");
+      const { data, error } = await supabase
+        .from("skills_repos")
+        .select("*")
+        .order("created_at");
+      if (error) throw error;
       return data || [];
     },
     enabled: !!user,
   });
-
-  // ── Derived counts ──────────────────────────────────────────────────────────
-
-  const getAppStats = (appType: string) => {
-    const enabledMcps = mcpServers.filter(
-      (m: any) => m.enabled && Array.isArray(m.app_bindings) && (m.app_bindings as string[]).includes(appType)
-    );
-    const installedSkills = skills.filter((s: any) => s.installed);
-    const enabledProviders = providers.filter((p: any) => p.enabled && p.app_type === appType);
-    return { enabledMcps, installedSkills, enabledProviders };
-  };
 
   // ── Claude Code ZIP Export ──────────────────────────────────────────────────
 
@@ -212,7 +119,12 @@ export default function Export() {
       const zip = new JSZip();
       const folder = zip.folder(`claude-export-${date}`)!;
 
-      const { enabledMcps, installedSkills, enabledProviders } = getAppStats("claude");
+      const { enabledMcps, installedSkills, enabledProviders } = getAppStats(
+        "claude",
+        mcpServers,
+        skills,
+        providers,
+      );
 
       // settings.json — MCP + Provider env merged per official spec
       folder.file(
@@ -221,7 +133,9 @@ export default function Export() {
       );
 
       // CLAUDE.md — active prompt targeting CLAUDE.md
-      const claudePrompt = prompts.find((p: any) => p.is_active && p.target_file === "CLAUDE.md");
+      const claudePrompt = prompts.find(
+        (prompt) => prompt.is_active && prompt.target_file === "CLAUDE.md",
+      );
       if (claudePrompt) {
         folder.file("CLAUDE.md", claudePrompt.content || "");
       }
@@ -229,9 +143,9 @@ export default function Export() {
       // skills/<name>/SKILL.md
       if (installedSkills.length > 0) {
         const skillsFolder = folder.folder("skills")!;
-        installedSkills.forEach((skill: any) => {
+        installedSkills.forEach((skill) => {
           const skillFolder = skillsFolder.folder(skill.name)!;
-          skillFolder.file("SKILL.md", generateSkillMd(skill));
+          skillFolder.file("SKILL.md", buildSkillMd(skill));
         });
       }
 
@@ -241,8 +155,12 @@ export default function Export() {
         title: t("export.exportSuccess"),
         description: `settings.json${claudePrompt ? " · CLAUDE.md" : ""}${installedSkills.length > 0 ? ` · skills/ (${installedSkills.length})` : ""}`,
       });
-    } catch (e: any) {
-      toast({ title: t("common.error"), description: e.message, variant: "destructive" });
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setExporting(null);
     }
@@ -257,13 +175,20 @@ export default function Export() {
       const zip = new JSZip();
       const folder = zip.folder(`codex-export-${date}`)!;
 
-      const { enabledMcps, enabledProviders } = getAppStats("codex");
+      const { enabledMcps, enabledProviders } = getAppStats(
+        "codex",
+        mcpServers,
+        skills,
+        providers,
+      );
 
       // config.toml — Provider + MCP Servers in TOML format (official ~/.codex/config.toml spec)
       folder.file("config.toml", generateCodexConfigToml(enabledProviders, enabledMcps));
 
       // AGENTS.md — active prompt
-      const agentsPrompt = prompts.find((p: any) => p.is_active && p.target_file === "AGENTS.md");
+      const agentsPrompt = prompts.find(
+        (prompt) => prompt.is_active && prompt.target_file === "AGENTS.md",
+      );
       if (agentsPrompt) {
         folder.file("AGENTS.md", agentsPrompt.content || "");
       }
@@ -274,8 +199,12 @@ export default function Export() {
         title: t("export.exportSuccess"),
         description: `config.toml${agentsPrompt ? " · AGENTS.md" : ""}`,
       });
-    } catch (e: any) {
-      toast({ title: t("common.error"), description: e.message, variant: "destructive" });
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setExporting(null);
     }
@@ -290,14 +219,16 @@ export default function Export() {
       const zip = new JSZip();
       const folder = zip.folder(`gemini-export-${date}`)!;
 
-      const { enabledMcps } = getAppStats("gemini");
+      const { enabledMcps } = getAppStats("gemini", mcpServers, skills, providers);
 
       // settings.json — MCP Servers (Gemini API key via GOOGLE_API_KEY env var, not in file)
       const mcpServersObj = buildMcpServersObject(enabledMcps);
       folder.file("settings.json", JSON.stringify({ mcpServers: mcpServersObj }, null, 2));
 
       // GEMINI.md — active prompt
-      const geminiPrompt = prompts.find((p: any) => p.is_active && p.target_file === "GEMINI.md");
+      const geminiPrompt = prompts.find(
+        (prompt) => prompt.is_active && prompt.target_file === "GEMINI.md",
+      );
       if (geminiPrompt) {
         folder.file("GEMINI.md", geminiPrompt.content || "");
       }
@@ -308,8 +239,12 @@ export default function Export() {
         title: t("export.exportSuccess"),
         description: `settings.json${geminiPrompt ? " · GEMINI.md" : ""}`,
       });
-    } catch (e: any) {
-      toast({ title: t("common.error"), description: e.message, variant: "destructive" });
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setExporting(null);
     }
@@ -324,21 +259,35 @@ export default function Export() {
       const zip = new JSZip();
       const folder = zip.folder(`opencode-export-${date}`)!;
 
-      const { enabledMcps } = getAppStats("opencode");
+      const { enabledMcps } = getAppStats("opencode", mcpServers, skills, providers);
 
       const mcpServersObj = buildMcpServersObject(enabledMcps);
-      folder.file("config.json", JSON.stringify({ mcpServers: mcpServersObj }, null, 2));
+      folder.file("opencode.json", JSON.stringify({ mcpServers: mcpServersObj }, null, 2));
 
-      const ocPrompt = prompts.find((p: any) => p.is_active && p.target_file === "OPENCODE.md");
-      if (ocPrompt) {
-        folder.file("OPENCODE.md", ocPrompt.content || "");
+      const opencodePrompt = prompts.find(
+        (prompt) => prompt.is_active && prompt.target_file === "OPENCODE.md",
+      );
+      const agentsPrompt = prompts.find(
+        (prompt) => prompt.is_active && prompt.target_file === "AGENTS.md",
+      );
+      const openCodePromptContent = opencodePrompt?.content || agentsPrompt?.content;
+      if (openCodePromptContent) {
+        // OpenCode official instructions file is AGENTS.md.
+        folder.file("AGENTS.md", openCodePromptContent);
       }
 
       const blob = await zip.generateAsync({ type: "blob" });
       saveAs(blob, `opencode-export-${date}.zip`);
-      toast({ title: t("export.exportSuccess") });
-    } catch (e: any) {
-      toast({ title: t("common.error"), description: e.message, variant: "destructive" });
+      toast({
+        title: t("export.exportSuccess"),
+        description: `opencode.json${openCodePromptContent ? " · AGENTS.md" : ""}`,
+      });
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setExporting(null);
     }
@@ -352,11 +301,27 @@ export default function Export() {
       const zip = new JSZip();
 
       // Strip internal DB fields, keep only meaningful user data
-      const cleanProviders = providers.map(({ id, user_id, created_at, updated_at, ...rest }: any) => rest);
-      const cleanMcps = mcpServers.map(({ id, user_id, created_at, updated_at, ...rest }: any) => rest);
-      const cleanPrompts = prompts.map(({ id, user_id, created_at, updated_at, ...rest }: any) => rest);
-      const cleanSkills = skills.map(({ id, user_id, created_at, updated_at, repo_id, ...rest }: any) => rest);
-      const cleanRepos = skillsRepos.map(({ id, user_id, created_at, updated_at, ...rest }: any) => rest);
+      const cleanProviders = providers.map((provider) =>
+        sanitizeProviderForBackup(provider, includeSecrets),
+      );
+      const cleanMcps = mcpServers.map((server) =>
+        sanitizeMcpForBackup(server, includeSecrets),
+      );
+      const cleanPrompts = prompts.map((prompt) =>
+        stripDbFields(prompt, ["id", "user_id", "created_at", "updated_at"] as const),
+      );
+      const cleanSkills = skills.map((skill) =>
+        stripDbFields(skill, [
+          "id",
+          "user_id",
+          "created_at",
+          "updated_at",
+          "repo_id",
+        ] as const),
+      );
+      const cleanRepos = skillsRepos.map((repo) =>
+        stripDbFields(repo, ["id", "user_id", "created_at", "updated_at"] as const),
+      );
 
       zip.file("providers.json", JSON.stringify(cleanProviders, null, 2));
       zip.file("mcp_servers.json", JSON.stringify(cleanMcps, null, 2));
@@ -366,9 +331,18 @@ export default function Export() {
 
       const blob = await zip.generateAsync({ type: "blob" });
       saveAs(blob, `ai-helper-backup-${new Date().toISOString().slice(0, 10)}.zip`);
-      toast({ title: t("export.exportSuccess"), description: t("export.backupDesc") });
-    } catch (e: any) {
-      toast({ title: t("common.error"), description: e.message, variant: "destructive" });
+      toast({
+        title: t("export.exportSuccess"),
+        description: `${t("export.backupDesc")}（${
+          includeSecrets ? "含敏感字段" : "已脱敏"
+        }）`,
+      });
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setExporting(null);
     }
@@ -376,11 +350,32 @@ export default function Export() {
 
   // ── Module single export ────────────────────────────────────────────────────
 
-  const handleModuleExport = (module: string, data: any[]) => {
-    const clean = data.map(({ id, user_id, created_at, updated_at, ...rest }: any) => rest);
+  const handleModuleExport = (
+    module: string,
+    data: Array<Provider | McpServer | Prompt | Skill | SkillsRepo>,
+  ) => {
+    let clean: Array<Record<string, unknown>> = [];
+
+    if (module === "providers") {
+      clean = (data as Provider[]).map((provider) =>
+        sanitizeProviderForBackup(provider, includeSecrets),
+      );
+    } else if (module === "mcp-servers") {
+      clean = (data as McpServer[]).map((server) =>
+        sanitizeMcpForBackup(server, includeSecrets),
+      );
+    } else {
+      clean = data.map((item) =>
+        stripDbFields(item, ["id", "user_id", "created_at", "updated_at"] as const),
+      );
+    }
+
     const blob = new Blob([JSON.stringify(clean, null, 2)], { type: "application/json" });
     saveAs(blob, `ai-helper-${module}-${new Date().toISOString().slice(0, 10)}.json`);
-    toast({ title: t("export.exportSuccess") });
+    toast({
+      title: t("export.exportSuccess"),
+      description: includeSecrets ? "已包含敏感字段" : "已脱敏导出",
+    });
   };
 
   // ── Import ──────────────────────────────────────────────────────────────────
@@ -391,37 +386,39 @@ export default function Export() {
     setImporting(true);
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      const parsed = parseImportData(JSON.parse(text) as unknown);
       let count = 0;
 
-      if (Array.isArray(data)) {
-        const sample = data[0];
-        if (!sample) throw new Error("空数据");
-
-        if ("provider_type" in sample) {
-          for (const item of data) {
-            const { id, created_at, updated_at, ...rest } = item;
-            const { error } = await supabase.from("providers").insert({ ...rest, user_id: user!.id });
-            if (!error) count++;
-          }
-        } else if ("transport_type" in sample) {
-          for (const item of data) {
-            const { id, created_at, updated_at, ...rest } = item;
-            const { error } = await supabase.from("mcp_servers").insert({ ...rest, user_id: user!.id });
-            if (!error) count++;
-          }
-        } else if ("target_file" in sample) {
-          for (const item of data) {
-            const { id, created_at, updated_at, ...rest } = item;
-            const { error } = await supabase.from("prompts").insert({ ...rest, user_id: user!.id });
-            if (!error) count++;
-          }
+      if (parsed.module === "providers") {
+        for (const item of parsed.items) {
+          const { error } = await supabase
+            .from("providers")
+            .insert({ ...item, user_id: user!.id });
+          if (!error) count++;
+        }
+      } else if (parsed.module === "mcp_servers") {
+        for (const item of parsed.items) {
+          const { error } = await supabase
+            .from("mcp_servers")
+            .insert({ ...item, user_id: user!.id });
+          if (!error) count++;
+        }
+      } else if (parsed.module === "prompts") {
+        for (const item of parsed.items) {
+          const { error } = await supabase
+            .from("prompts")
+            .insert({ ...item, user_id: user!.id });
+          if (!error) count++;
         }
       }
 
       toast({ title: t("export.importSuccess").replace("{count}", String(count)) });
-    } catch (e: any) {
-      toast({ title: t("export.importFailed"), description: e.message, variant: "destructive" });
+    } catch (error) {
+      toast({
+        title: t("export.importFailed"),
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -431,14 +428,8 @@ export default function Export() {
   // ── Deep Link ───────────────────────────────────────────────────────────────
 
   const generateDeepLink = () => {
-    const enabledProviders = providers.filter((p: any) => p.enabled);
-    const payload = enabledProviders.map((p: any) => ({
-      name: p.name,
-      provider_type: p.provider_type,
-      base_url: p.base_url,
-      app_type: p.app_type,
-    }));
-    const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
+    const payload = buildDeepLinkPayload(providers);
+    const encoded = encodeDeepLinkPayload(payload);
     const link = `${window.location.origin}/import?data=${encoded}`;
     setDeepLink(link);
   };
@@ -457,11 +448,11 @@ export default function Export() {
       onExport: exportClaude,
       files: [
         { name: "settings.json", path: "~/.claude/settings.json", icon: <Settings className="h-3 w-3" />, desc: "MCP + Provider env" },
-        { name: "CLAUDE.md", path: "~/.claude/CLAUDE.md", icon: <FileText className="h-3 w-3" />, desc: "系统提示词", optional: true },
+        { name: "CLAUDE.md", path: "项目根目录（或 ~/.claude/CLAUDE.md）", icon: <FileText className="h-3 w-3" />, desc: "系统提示词", optional: true },
         { name: "skills/<name>/SKILL.md", path: "~/.claude/skills/", icon: <FileCode className="h-3 w-3" />, desc: "已安装 Skills", optional: true },
       ],
       stats: () => {
-        const s = getAppStats("claude");
+        const s = getAppStats("claude", mcpServers, skills, providers);
         return `${s.enabledMcps.length} MCP · ${s.installedSkills.length} Skills`;
       },
     },
@@ -474,7 +465,7 @@ export default function Export() {
         { name: "AGENTS.md", path: "项目根目录", icon: <FileText className="h-3 w-3" />, desc: "系统提示词", optional: true },
       ],
       stats: () => {
-        const s = getAppStats("codex");
+        const s = getAppStats("codex", mcpServers, skills, providers);
         return `${s.enabledMcps.length} MCP · ${s.enabledProviders.length} Providers`;
       },
     },
@@ -483,11 +474,11 @@ export default function Export() {
       label: "Gemini CLI",
       onExport: exportGemini,
       files: [
-        { name: "settings.json", path: "~/.gemini/settings.json", icon: <Settings className="h-3 w-3" />, desc: "MCP Servers" },
+        { name: "settings.json", path: "~/.gemini/settings.json 或 ./.gemini/settings.json", icon: <Settings className="h-3 w-3" />, desc: "MCP Servers" },
         { name: "GEMINI.md", path: "项目根目录", icon: <FileText className="h-3 w-3" />, desc: "系统提示词", optional: true },
       ],
       stats: () => {
-        const s = getAppStats("gemini");
+        const s = getAppStats("gemini", mcpServers, skills, providers);
         return `${s.enabledMcps.length} MCP`;
       },
     },
@@ -496,11 +487,11 @@ export default function Export() {
       label: "OpenCode",
       onExport: exportOpenCode,
       files: [
-        { name: "config.json", path: "~/.config/opencode/config.json", icon: <Settings className="h-3 w-3" />, desc: "MCP Servers" },
-        { name: "OPENCODE.md", path: "项目根目录", icon: <FileText className="h-3 w-3" />, desc: "系统提示词", optional: true },
+        { name: "opencode.json", path: "~/.config/opencode/opencode.json 或 ./opencode.json", icon: <Settings className="h-3 w-3" />, desc: "MCP Servers" },
+        { name: "AGENTS.md", path: "项目根目录", icon: <FileText className="h-3 w-3" />, desc: "系统提示词", optional: true },
       ],
       stats: () => {
-        const s = getAppStats("opencode");
+        const s = getAppStats("opencode", mcpServers, skills, providers);
         return `${s.enabledMcps.length} MCP`;
       },
     },
@@ -594,9 +585,19 @@ export default function Export() {
                 <Database className="h-4 w-4" />
                 {t("export.dataBackup")}
               </CardTitle>
-              <CardDescription>{t("export.dataBackupDesc")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+            <CardDescription>{t("export.dataBackupDesc")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div>
+                <p className="text-sm font-medium">包含敏感字段</p>
+                <p className="text-xs text-muted-foreground">
+                  关闭时将脱敏 `providers.api_key` 与 `mcp_servers.env`
+                </p>
+              </div>
+              <Switch checked={includeSecrets} onCheckedChange={setIncludeSecrets} />
+            </div>
+
               {/* Full backup button */}
               <Button onClick={handleDataBackup} disabled={exporting !== null} variant="outline">
                 {exporting === "backup"

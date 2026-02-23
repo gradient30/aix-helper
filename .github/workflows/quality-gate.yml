@@ -1,0 +1,57 @@
+﻿name: Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run quality gate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run ci:gate
+
+      - name: Upload preset verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preset-verification-report
+          path: reports/preset-verification.json
+          if-no-files-found: warn
+
+      - name: Upload guide verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guide-verification-report
+          path: reports/guide-verification.json
+          if-no-files-found: warn
+
+      - name: Upload ai-tech verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-tech-verification-report
+          path: reports/ai-tech-verification.json
+          if-no-files-found: warn

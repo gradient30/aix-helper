@@ -20,31 +20,35 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useTranslation } from "react-i18next";
 import { HelpDialog } from "@/components/HelpDialog";
 import type { Tables } from "@/integrations/supabase/types";
+import { getErrorMessage } from "@/lib/errors";
+import {
+  APP_TYPES,
+  PROVIDER_PRESETS,
+  getAutoBaseUrl,
+} from "@/config/preset-catalog/providers";
+import { DOCS_CATALOG_VERIFIED_AT, LOCAL_DEPLOY_DOCS } from "@/config/docs-catalog/help";
 
 type Provider = Tables<"providers">;
+type ConnectionTestResult = { success: boolean; message: string; latency_ms?: number };
 
-const PROVIDER_PRESETS = [
-  { name: "Official Login", provider_type: "official", base_url: "", app_type: "claude" },
-  { name: "PackyCode", provider_type: "packycode", base_url: "https://api.packycode.com", app_type: "claude" },
-  { name: "Custom", provider_type: "custom", base_url: "", app_type: "claude" },
-];
-
-const APP_TYPES = ["claude", "codex", "gemini", "opencode"] as const;
-
-const OFFICIAL_BASE_URLS: Record<string, string> = {
-  claude: "https://api.anthropic.com",
-  codex: "https://api.openai.com/v1",
-  gemini: "https://generativelanguage.googleapis.com",
-  opencode: "https://api.openai.com/v1",
-};
-
-const PACKYCODE_BASE_URL = "https://api.packycode.com";
-
-function getAutoBaseUrl(providerType: string, appType: string): string {
-  if (providerType === "official") return OFFICIAL_BASE_URLS[appType] || "";
-  if (providerType === "packycode") return PACKYCODE_BASE_URL;
-  return "";
+function normalizeConnectionResult(payload: unknown): ConnectionTestResult {
+  if (payload && typeof payload === "object") {
+    const candidate = payload as Record<string, unknown>;
+    if (
+      typeof candidate.success === "boolean" &&
+      typeof candidate.message === "string"
+    ) {
+      return {
+        success: candidate.success,
+        message: candidate.message,
+        latency_ms:
+          typeof candidate.latency_ms === "number" ? candidate.latency_ms : undefined,
+      };
+    }
+  }
+  return { success: false, message: "无效的测试响应" };
 }
+
 
 function ProviderForm({
   initial,
@@ -134,12 +138,14 @@ export default function Providers() {
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testingAll, setTestingAll] = useState(false);
-  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string; latency_ms?: number }>>({});
+  const [testResults, setTestResults] = useState<
+    Record<string, ConnectionTestResult | undefined>
+  >({});
   const [deleteTarget, setDeleteTarget] = useState<Provider | null>(null);
 
   const testConnection = async (provider: Provider) => {
     setTestingId(provider.id);
-    setTestResults((prev) => ({ ...prev, [provider.id]: undefined as any }));
+    setTestResults((prev) => ({ ...prev, [provider.id]: undefined }));
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const resp = await fetch(
@@ -160,11 +166,11 @@ export default function Providers() {
           }),
         }
       );
-      const result = await resp.json();
+      const result = normalizeConnectionResult(await resp.json());
       setTestResults((prev) => ({ ...prev, [provider.id]: result }));
       return result;
-    } catch (e: any) {
-      const result = { success: false, message: e.message };
+    } catch (error) {
+      const result = { success: false, message: getErrorMessage(error) };
       setTestResults((prev) => ({ ...prev, [provider.id]: result }));
       return result;
     } finally {
@@ -316,13 +322,26 @@ export default function Providers() {
               <DialogHeader>
                 <DialogTitle>新增 Provider</DialogTitle>
               </DialogHeader>
-              <div className="mb-4 flex gap-2">
+              <div className="mb-4 grid gap-2 sm:grid-cols-3">
                 {PROVIDER_PRESETS.map((p) => (
-                  <Button key={p.provider_type} variant="outline" size="sm" onClick={() => applyPreset(p)}>
-                    {p.name}
+                  <Button
+                    key={p.id}
+                    variant="outline"
+                    size="sm"
+                    className="justify-between gap-2"
+                    onClick={() => applyPreset(p)}
+                    title={`${p.verification.verification_reason} (${p.verification.last_verified_at})`}
+                  >
+                    <span>{p.name}</span>
+                    <span className="text-[10px] uppercase text-muted-foreground">
+                      {p.verification.verification_status}
+                    </span>
                   </Button>
                 ))}
               </div>
+              <p className="mb-4 text-xs text-muted-foreground">
+                预设已按官方来源验真，最后核验：{PROVIDER_PRESETS[0].verification.last_verified_at}
+              </p>
               <ProviderForm onSave={(data) => createMutation.mutate(data)} saving={createMutation.isPending} />
             </DialogContent>
           </Dialog>
@@ -335,13 +354,23 @@ export default function Providers() {
         <AlertTitle className="text-sm font-semibold">本地部署说明</AlertTitle>
         <AlertDescription className="mt-2 space-y-2">
           <p className="text-sm text-muted-foreground">
-            Provider 配置已实时备份到云端。要应用到本地 CLI，需导出配置文件并放置到对应路径：
+            Provider 配置已实时备份到云端。Web 端无法直接写入本地文件，请导出后按官方路径（或环境变量）应用：
           </p>
           <ul className="text-xs text-muted-foreground space-y-1 ml-1">
-            <li><code className="bg-muted px-1 rounded">Claude Code</code> → <code className="bg-muted px-1 rounded">~/.claude/settings.json</code></li>
-            <li><code className="bg-muted px-1 rounded">Codex CLI</code> → <code className="bg-muted px-1 rounded">~/.codex/config.toml</code></li>
-            <li><code className="bg-muted px-1 rounded">Gemini CLI</code> → <code className="bg-muted px-1 rounded">~/.gemini/settings.json</code></li>
+            <li><code className="bg-muted px-1 rounded">Claude Code</code> → <code className="bg-muted px-1 rounded">~/.claude/settings.json</code>（Windows：<code className="bg-muted px-1 rounded">%USERPROFILE%\\.claude\\settings.json</code>）</li>
+            <li><code className="bg-muted px-1 rounded">Codex CLI</code> → <code className="bg-muted px-1 rounded">~/.codex/config.toml</code>（Windows：<code className="bg-muted px-1 rounded">%USERPROFILE%\\.codex\\config.toml</code>）</li>
+            <li><code className="bg-muted px-1 rounded">Gemini CLI</code> → API Key 使用 <code className="bg-muted px-1 rounded">GEMINI_API_KEY</code> / <code className="bg-muted px-1 rounded">GOOGLE_API_KEY</code>，配置文件为 <code className="bg-muted px-1 rounded">~/.gemini/settings.json</code> 或 <code className="bg-muted px-1 rounded">./.gemini/settings.json</code></li>
+            <li><code className="bg-muted px-1 rounded">OpenCode</code> → <code className="bg-muted px-1 rounded">~/.config/opencode/opencode.json</code> 或 <code className="bg-muted px-1 rounded">./opencode.json</code></li>
           </ul>
+          <p className="text-xs text-muted-foreground">
+            建议始终以官方文档核对本地配置字段。最新核验日期：{DOCS_CATALOG_VERIFIED_AT}。
+          </p>
+          <p className="text-xs text-muted-foreground space-x-2">
+            <a className="underline underline-offset-2" href={LOCAL_DEPLOY_DOCS.claude} target="_blank" rel="noopener noreferrer">Claude Docs</a>
+            <a className="underline underline-offset-2" href={LOCAL_DEPLOY_DOCS.codex} target="_blank" rel="noopener noreferrer">Codex Docs</a>
+            <a className="underline underline-offset-2" href={LOCAL_DEPLOY_DOCS.gemini} target="_blank" rel="noopener noreferrer">Gemini Docs</a>
+            <a className="underline underline-offset-2" href={LOCAL_DEPLOY_DOCS.opencode} target="_blank" rel="noopener noreferrer">OpenCode Docs</a>
+          </p>
           <Button size="sm" variant="outline" className="mt-1 h-7 text-xs" onClick={() => navigate("/export")}>
             <FolderOpen className="mr-1.5 h-3 w-3" />前往导出配置
           </Button>

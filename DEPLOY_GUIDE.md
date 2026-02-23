@@ -268,6 +268,32 @@ command: pages deploy dist --project-name=aix-helper --commit-dirty=true
 - 只用 GitHub Pages：删除 `.github/workflows/deploy-cloudflare.yml`
 - 只用 Cloudflare：删除 `.github/workflows/deploy-pages.yml`
 
+### Q: `npm run ci:gate` 失败，报告 `github:token` 缺失怎么办？
+
+`verify:ai-tech` 采用严格阻断策略，必须拿到 GitHub API token 才会通过。
+
+本地校验支持以下 token 来源（按优先级）：
+
+1. 环境变量 `GITHUB_TOKEN`
+2. 环境变量 `GH_TOKEN`
+3. Git Credential Helper（`git credential fill`）
+
+PowerShell 临时设置示例（当前会话生效）：
+
+```powershell
+$env:GITHUB_TOKEN = "ghp_xxx"
+npm run ci:gate
+```
+
+GitHub Actions 中已在 workflow 注入：
+
+```yaml
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+如果本地未配置环境变量，且 Git Credential Helper 也没有可用凭据，则会被门禁阻断（预期行为）。
+
 ---
 
 ## ⚠️ 已知坑：`npm ci` 在本项目中会失败

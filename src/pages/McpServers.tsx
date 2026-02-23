@@ -24,8 +24,34 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useTranslation } from "react-i18next";
 import { HelpDialog } from "@/components/HelpDialog";
 import type { Tables } from "@/integrations/supabase/types";
+import { getErrorMessage } from "@/lib/errors";
+import {
+  MCP_PRESET_KEYS,
+  MCP_PRESETS,
+} from "@/config/preset-catalog/mcp";
+import type { McpPresetTemplate } from "@/config/preset-catalog/types";
+import { DOCS_CATALOG_VERIFIED_AT, LOCAL_DEPLOY_DOCS } from "@/config/docs-catalog/help";
 
 type McpServer = Tables<"mcp_servers">;
+type ConnectionTestResult = { success: boolean; message: string; latency_ms?: number };
+
+function normalizeConnectionResult(payload: unknown): ConnectionTestResult {
+  if (payload && typeof payload === "object") {
+    const candidate = payload as Record<string, unknown>;
+    if (
+      typeof candidate.success === "boolean" &&
+      typeof candidate.message === "string"
+    ) {
+      return {
+        success: candidate.success,
+        message: candidate.message,
+        latency_ms:
+          typeof candidate.latency_ms === "number" ? candidate.latency_ms : undefined,
+      };
+    }
+  }
+  return { success: false, message: "无效的测试响应" };
+}
 
 const TRANSPORT_TYPES = [
   { value: "stdio", label: "Stdio", icon: Terminal },
@@ -34,51 +60,6 @@ const TRANSPORT_TYPES = [
 ] as const;
 
 const APP_OPTIONS = ["claude", "codex", "gemini", "opencode"] as const;
-
-type McpTemplate = { name: string; transport_type: string; command: string; args: string[]; desc: string };
-
-const MCP_PRESETS: Record<string, { label: string; items: McpTemplate[] }> = {
-  browser: {
-    label: "🌐 浏览器与测试",
-    items: [
-      { name: "playwright", transport_type: "stdio", command: "npx", args: ["@playwright/mcp@latest"], desc: "浏览器自动化与端到端测试" },
-      { name: "puppeteer", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-puppeteer"], desc: "Chrome 自动化与网页爬取" },
-    ],
-  },
-  search: {
-    label: "🔍 搜索与网络",
-    items: [
-      { name: "mcp-fetch", transport_type: "stdio", command: "npx", args: ["-y", "@anthropics/mcp-fetch"], desc: "网络请求与网页抓取" },
-      { name: "brave-search", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-brave-search"], desc: "Brave 实时网络搜索" },
-      { name: "context7", transport_type: "stdio", command: "npx", args: ["-y", "@upstash/context7-mcp@latest"], desc: "上下文增强，实时获取最新文档" },
-    ],
-  },
-  data: {
-    label: "💾 数据与存储",
-    items: [
-      { name: "sqlite", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/path/to/db"], desc: "SQLite 数据库操作" },
-      { name: "postgres", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"], desc: "PostgreSQL 数据库连接" },
-      { name: "mcp-memory", transport_type: "stdio", command: "npx", args: ["-y", "@anthropics/mcp-memory"], desc: "跨对话持久化记忆存储" },
-      { name: "mcp-filesystem", transport_type: "stdio", command: "npx", args: ["-y", "@anthropics/mcp-filesystem", "/path"], desc: "本地文件系统读写" },
-    ],
-  },
-  devtools: {
-    label: "🛠️ 开发工具",
-    items: [
-      { name: "github", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-github"], desc: "GitHub 仓库/Issue/PR 操作" },
-      { name: "sequential-thinking", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-sequential-thinking"], desc: "增强逐步推理能力" },
-      { name: "everything", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-everything"], desc: "MCP 全功能测试服务" },
-    ],
-  },
-  collab: {
-    label: "💬 协作与通信",
-    items: [
-      { name: "slack", transport_type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-slack"], desc: "Slack 消息与频道管理" },
-    ],
-  },
-};
-
-const MCP_PRESET_KEYS = Object.keys(MCP_PRESETS);
 
 interface EnvEntry { key: string; value: string }
 
@@ -160,7 +141,7 @@ function McpServerForm({
           </div>
           <div className="space-y-2">
             <Label>Arguments <span className="text-xs text-muted-foreground ml-1">(选填，空格分隔)</span></Label>
-            <Input value={args} onChange={(e) => setArgs(e.target.value)} placeholder="-y @anthropics/mcp-fetch" maxLength={1000} />
+            <Input value={args} onChange={(e) => setArgs(e.target.value)} placeholder="-y @modelcontextprotocol/server-memory" maxLength={1000} />
           </div>
         </>
       ) : (
@@ -222,12 +203,14 @@ export default function McpServers() {
   const [editingServer, setEditingServer] = useState<McpServer | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testingAll, setTestingAll] = useState(false);
-  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string; latency_ms?: number }>>({});
+  const [testResults, setTestResults] = useState<
+    Record<string, ConnectionTestResult | undefined>
+  >({});
   const [deleteTarget, setDeleteTarget] = useState<McpServer | null>(null);
 
   const testConnection = async (server: McpServer) => {
     setTestingId(server.id);
-    setTestResults((prev) => ({ ...prev, [server.id]: undefined as any }));
+    setTestResults((prev) => ({ ...prev, [server.id]: undefined }));
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const resp = await fetch(
@@ -248,11 +231,11 @@ export default function McpServers() {
           }),
         }
       );
-      const result = await resp.json();
+      const result = normalizeConnectionResult(await resp.json());
       setTestResults((prev) => ({ ...prev, [server.id]: result }));
       return result;
-    } catch (e: any) {
-      const result = { success: false, message: e.message };
+    } catch (error) {
+      const result = { success: false, message: getErrorMessage(error) };
       setTestResults((prev) => ({ ...prev, [server.id]: result }));
       return result;
     } finally {
@@ -324,7 +307,7 @@ export default function McpServers() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["mcp_servers"] }),
   });
 
-  const applyTemplate = (tpl: McpTemplate) => {
+  const applyTemplate = (tpl: McpPresetTemplate) => {
     createMutation.mutate({
       name: tpl.name,
       transport_type: tpl.transport_type,
@@ -389,11 +372,19 @@ export default function McpServers() {
                         <TooltipProvider key={tpl.name} delayDuration={200}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => applyTemplate(tpl)}>
-                                {tpl.name}
+                              <Button variant="outline" size="sm" className="justify-between text-xs gap-2" onClick={() => applyTemplate(tpl)}>
+                                <span>{tpl.name}</span>
+                                <span className="text-[10px] uppercase text-muted-foreground">{tpl.verification.verification_status}</span>
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="bottom"><p className="text-xs max-w-[200px]">{tpl.desc}</p></TooltipContent>
+                            <TooltipContent side="bottom">
+                              <div className="space-y-1 text-xs max-w-[280px]">
+                                <p>{tpl.desc}</p>
+                                <p>method: {tpl.install_method}</p>
+                                <p>verified: {tpl.verification.last_verified_at}</p>
+                                <p className="truncate">source: {tpl.source_url}</p>
+                              </div>
+                            </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       ))}
@@ -401,6 +392,9 @@ export default function McpServers() {
                   </TabsContent>
                 ))}
               </Tabs>
+              <p className="mb-4 text-xs text-muted-foreground">
+                模板已完成严格核验（404/deprecated 已剔除），最后核验：{MCP_PRESETS.browser.items[0].verification.last_verified_at}
+              </p>
               <McpServerForm onSave={(data) => createMutation.mutate(data)} saving={createMutation.isPending} />
             </DialogContent>
           </Dialog>
@@ -413,14 +407,23 @@ export default function McpServers() {
         <AlertTitle className="text-sm font-semibold">本地部署说明</AlertTitle>
         <AlertDescription className="mt-2 space-y-2">
           <p className="text-sm text-muted-foreground">
-            配置已实时备份到云端。Web 端无法直接修改本地文件系统（浏览器安全限制），需通过「导出配置」将文件手动放置到本地路径才能生效：
+            配置已实时备份到云端。Web 端无法直接修改本地文件系统（浏览器安全限制），需通过「导出配置」将文件手动放置到官方路径：
           </p>
           <ul className="text-xs text-muted-foreground space-y-1 ml-1">
-            <li><code className="bg-muted px-1 rounded">Claude Code</code> → <code className="bg-muted px-1 rounded">~/.claude/settings.json</code></li>
-            <li><code className="bg-muted px-1 rounded">Codex CLI</code> → <code className="bg-muted px-1 rounded">~/.codex/config.toml</code></li>
-            <li><code className="bg-muted px-1 rounded">Gemini CLI</code> → <code className="bg-muted px-1 rounded">~/.gemini/settings.json</code></li>
-            <li><code className="bg-muted px-1 rounded">OpenCode</code> → <code className="bg-muted px-1 rounded">~/.config/opencode/config.json</code></li>
+            <li><code className="bg-muted px-1 rounded">Claude Code</code> → <code className="bg-muted px-1 rounded">~/.claude/settings.json</code>（Windows：<code className="bg-muted px-1 rounded">%USERPROFILE%\\.claude\\settings.json</code>）</li>
+            <li><code className="bg-muted px-1 rounded">Codex CLI</code> → <code className="bg-muted px-1 rounded">~/.codex/config.toml</code>（Windows：<code className="bg-muted px-1 rounded">%USERPROFILE%\\.codex\\config.toml</code>）</li>
+            <li><code className="bg-muted px-1 rounded">Gemini CLI</code> → <code className="bg-muted px-1 rounded">~/.gemini/settings.json</code> 或 <code className="bg-muted px-1 rounded">./.gemini/settings.json</code></li>
+            <li><code className="bg-muted px-1 rounded">OpenCode</code> → <code className="bg-muted px-1 rounded">~/.config/opencode/opencode.json</code> 或 <code className="bg-muted px-1 rounded">./opencode.json</code></li>
           </ul>
+          <p className="text-xs text-muted-foreground">
+            最新核验日期：{DOCS_CATALOG_VERIFIED_AT}（以官方文档为准）。
+          </p>
+          <p className="text-xs text-muted-foreground space-x-2">
+            <a className="underline underline-offset-2" href={LOCAL_DEPLOY_DOCS.claude} target="_blank" rel="noopener noreferrer">Claude Docs</a>
+            <a className="underline underline-offset-2" href={LOCAL_DEPLOY_DOCS.codex} target="_blank" rel="noopener noreferrer">Codex Docs</a>
+            <a className="underline underline-offset-2" href={LOCAL_DEPLOY_DOCS.gemini} target="_blank" rel="noopener noreferrer">Gemini Docs</a>
+            <a className="underline underline-offset-2" href={LOCAL_DEPLOY_DOCS.opencode} target="_blank" rel="noopener noreferrer">OpenCode Docs</a>
+          </p>
           <Button size="sm" variant="outline" className="mt-1 h-7 text-xs" onClick={() => navigate("/export")}>
             <FolderOpen className="mr-1.5 h-3 w-3" />前往导出配置
           </Button>

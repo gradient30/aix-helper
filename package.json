@@ -10,7 +10,12 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify:presets": "node --experimental-strip-types scripts/verify-presets.ts",
+    "verify:guides": "node --experimental-strip-types scripts/verify-guide-content.ts",
+    "sync:ai-tech": "node --experimental-strip-types scripts/sync-ai-tech-top10.ts",
+    "verify:ai-tech": "node --experimental-strip-types scripts/verify-ai-tech.ts",
+    "ci:gate": "npm run lint && npm run test && npm run verify:presets && npm run verify:guides && npm run verify:ai-tech"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -23,87 +23,133 @@ import { Plus, Trash2, BookOpen, Loader2, GitBranch, RefreshCw, Pencil, FolderGi
 import { useTranslation } from "react-i18next";
 import { HelpDialog } from "@/components/HelpDialog";
 import type { Tables } from "@/integrations/supabase/types";
+import { getErrorMessage } from "@/lib/errors";
+import { PRESET_REPOS, PRESET_TABS } from "@/config/preset-catalog/skills";
+import type { SkillsRepoPreset } from "@/config/preset-catalog/types";
 
 type SkillsRepo = Tables<"skills_repos">;
 type Skill = Tables<"skills">;
 
-const PRESET_REPOS = {
-  skills: [
-    { owner: "ComposioHQ", repo: "awesome-claude-skills", branch: "master", desc: "Claude Skills 大合集（943 个技能）" },
-    { owner: "anthropics", repo: "skills", desc: "Anthropic 官方技能仓库（17 个技能）" },
-    { owner: "JimLiu", repo: "baoyu-skills", desc: "宝玉技能包（16 个技能）" },
-    { owner: "cexll", repo: "myclaude", branch: "master", desc: "个人 Claude 技能集（13 个技能）" },
-  ],
-  dev: [
-    { owner: "anthropics", repo: "anthropic-cookbook", desc: "Anthropic 实战示例" },
-    { owner: "openai", repo: "openai-cookbook", desc: "OpenAI 实战示例" },
-    { owner: "modelcontextprotocol", repo: "servers", desc: "MCP 官方服务器集合" },
-    { owner: "microsoft", repo: "semantic-kernel", desc: "AI 编排框架" },
-    { owner: "langchain-ai", repo: "langchain", desc: "LangChain 框架" },
-    { owner: "run-llama", repo: "llama_index", desc: "LlamaIndex 数据框架" },
-    { owner: "sigoden", repo: "aichat", desc: "全能 AI CLI 工具" },
-    { owner: "continuedev", repo: "continue", desc: "Continue IDE AI 插件" },
-    { owner: "cline", repo: "cline", desc: "Cline AI 编码助手" },
-    { owner: "sourcegraph", repo: "cody", desc: "Cody AI 代码助手" },
-  ],
-  design: [
-    { owner: "penpot", repo: "penpot", desc: "开源设计平台" },
-    { owner: "excalidraw", repo: "excalidraw", desc: "手绘风格白板" },
-    { owner: "tldraw", repo: "tldraw", desc: "在线白板引擎" },
-    { owner: "theatre-js", repo: "theatre", desc: "动画编辑器" },
-    { owner: "rive-app", repo: "rive-wasm", desc: "Rive 动画运行时" },
-    { owner: "imgly", repo: "cesdk-web-examples", desc: "创意设计 SDK" },
-    { owner: "BuilderIO", repo: "figma-html", desc: "Figma → HTML" },
-    { owner: "tokens-studio", repo: "figma-plugin", desc: "设计 Token 插件" },
-    { owner: "jina-ai", repo: "reader", desc: "网页内容提取" },
-    { owner: "markdoc", repo: "markdoc", desc: "文档标记语言" },
-  ],
-  office: [
-    { owner: "lobehub", repo: "lobe-chat", desc: "Lobe Chat" },
-    { owner: "ChatGPTNextWeb", repo: "ChatGPT-Next-Web", desc: "ChatGPT Next Web" },
-    { owner: "langgenius", repo: "dify", desc: "Dify AI 平台" },
-    { owner: "n8n-io", repo: "n8n", desc: "工作流自动化" },
-    { owner: "FlowiseAI", repo: "Flowise", desc: "可视化 AI 流" },
-    { owner: "makeplane", repo: "plane", desc: "项目管理" },
-    { owner: "AppFlowy-IO", repo: "AppFlowy", desc: "开源 Notion 替代" },
-    { owner: "twentyhq", repo: "twenty", desc: "开源 CRM" },
-    { owner: "hoppscotch", repo: "hoppscotch", desc: "API 调试工具" },
-    { owner: "nocodb", repo: "nocodb", desc: "开源 Airtable 替代" },
-  ],
-  qa: [
-    { owner: "microsoft", repo: "playwright", desc: "端到端测试框架" },
-    { owner: "puppeteer", repo: "puppeteer", desc: "浏览器自动化" },
-    { owner: "cypress-io", repo: "cypress", desc: "前端测试框架" },
-    { owner: "SeleniumHQ", repo: "selenium", desc: "浏览器自动化" },
-    { owner: "grafana", repo: "k6", desc: "负载测试工具" },
-    { owner: "locustio", repo: "locust", desc: "性能测试框架" },
-    { owner: "postmanlabs", repo: "httpbin", desc: "HTTP 测试服务" },
-    { owner: "mockoon", repo: "mockoon", desc: "Mock API 工具" },
-    { owner: "stoplightio", repo: "prism", desc: "API Mock 服务" },
-    { owner: "karatelabs", repo: "karate", desc: "API 测试框架" },
-  ],
-  docs: [
-    { owner: "jina-ai", repo: "reader", desc: "网页内容提取" },
-    { owner: "Unstructured-IO", repo: "unstructured", desc: "非结构化数据处理" },
-    { owner: "DS4SD", repo: "docling", desc: "文档解析引擎" },
-    { owner: "VikParuchuri", repo: "marker", desc: "PDF → Markdown" },
-    { owner: "opendatalab", repo: "MinerU", desc: "文档数据挖掘" },
-    { owner: "Stirling-Tools", repo: "Stirling-PDF", desc: "PDF 处理工具" },
-    { owner: "gotenberg", repo: "gotenberg", desc: "文档转换 API" },
-    { owner: "jgm", repo: "pandoc", desc: "通用文档转换" },
-    { owner: "azimutt", repo: "azimutt", desc: "数据库可视化" },
-    { owner: "mermaid-js", repo: "mermaid", desc: "图表生成引擎" },
-  ],
+type GitHubContentItem = {
+  type: string;
+  name: string;
+  path: string;
 };
 
-const PRESET_TABS = [
-  { key: "skills", label: "🎯 Skills 仓库" },
-  { key: "dev", label: "💻 研发类" },
-  { key: "design", label: "🎨 设计类" },
-  { key: "office", label: "📋 办公类" },
-  { key: "qa", label: "🧪 QA 测试" },
-  { key: "docs", label: "📄 文档处理" },
-] as const;
+function isGitHubContentItem(value: unknown): value is GitHubContentItem {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Record<string, unknown>;
+  return (
+    typeof item.type === "string" &&
+    typeof item.name === "string" &&
+    typeof item.path === "string"
+  );
+}
+
+async function readSkillDescription(
+  owner: string,
+  repo: string,
+  branch: string,
+  dirPath: string,
+): Promise<string> {
+  try {
+    const readmeResp = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${dirPath}/README.md?ref=${branch}`,
+    );
+    if (!readmeResp.ok) return "";
+
+    const readmeData = (await readmeResp.json()) as Record<string, unknown>;
+    if (typeof readmeData.content !== "string") return "";
+
+    const decoded = atob(readmeData.content);
+    const firstLine = decoded
+      .split("\n")
+      .find((line) => line.trim() && !line.startsWith("#"));
+    return firstLine?.trim().slice(0, 200) || "";
+  } catch {
+    return "";
+  }
+}
+
+type GitHubFetchResult = {
+  ok: boolean;
+  status: number;
+  data?: unknown;
+  error?: string;
+};
+
+const GITHUB_RETRY_DELAYS_MS = [500, 1200];
+
+async function fetchGitHubJsonWithRetry(url: string): Promise<GitHubFetchResult> {
+  let lastResult: GitHubFetchResult = {
+    ok: false,
+    status: 0,
+    error: "Unknown GitHub error",
+  };
+
+  for (let attempt = 0; attempt <= GITHUB_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const resp = await fetch(url);
+      const payload = (await resp.json()) as unknown;
+      if (resp.ok) {
+        return { ok: true, status: resp.status, data: payload };
+      }
+
+      const message =
+        payload && typeof payload === "object" && "message" in payload
+          ? String((payload as Record<string, unknown>).message)
+          : `GitHub API error: ${resp.status}`;
+
+      lastResult = { ok: false, status: resp.status, error: message };
+
+      // Secondary rate limit or transient server error.
+      if (resp.status === 403 || resp.status >= 500) {
+        if (attempt < GITHUB_RETRY_DELAYS_MS.length) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, GITHUB_RETRY_DELAYS_MS[attempt]),
+          );
+          continue;
+        }
+      }
+
+      return lastResult;
+    } catch (error) {
+      lastResult = {
+        ok: false,
+        status: 0,
+        error: getErrorMessage(error),
+      };
+      if (attempt < GITHUB_RETRY_DELAYS_MS.length) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, GITHUB_RETRY_DELAYS_MS[attempt]),
+        );
+        continue;
+      }
+      return lastResult;
+    }
+  }
+
+  return lastResult;
+}
+
+async function hasSkillManifest(
+  owner: string,
+  repo: string,
+  branch: string,
+  dirPath: string,
+): Promise<boolean> {
+  const candidates = ["SKILL.md", "skill.md"];
+  for (const fileName of candidates) {
+    const fileResp = await fetchGitHubJsonWithRetry(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${dirPath}/${fileName}?ref=${branch}`,
+    );
+    if (fileResp.status === 403) {
+      throw new Error("GitHub API 访问受限或限流，请稍后重试（已自动重试）");
+    }
+    if (fileResp.ok) return true;
+  }
+  return false;
+}
 
 // Skill 中文说明 Tooltip — 通用技能 + 常见仓库扫描出的技能
 const SKILL_TIPS: Record<string, string> = {
@@ -190,6 +236,29 @@ const SKILL_TIPS: Record<string, string> = {
   "ai-prompt": "提示词工程助手，Prompt 设计和优化",
   "prompt-engineering": "提示词工程助手，Prompt 优化",
 };
+
+const SKILL_BUNDLE_SLUGS = new Set(
+  PRESET_REPOS.skills.map((preset) => `${preset.owner}/${preset.repo}`.toLowerCase()),
+);
+
+function toRepoSlug(owner: string, repo: string): string {
+  return `${owner}/${repo}`.toLowerCase();
+}
+
+function getRepoKind(owner: string, repo: string): SkillsRepoPreset["repo_kind"] {
+  return SKILL_BUNDLE_SLUGS.has(toRepoSlug(owner, repo))
+    ? "skill_bundle"
+    : "reference_repo";
+}
+
+function getGitHubErrorMessage(status: number, fallback?: string): string {
+  if (status === 404) return "仓库路径不存在，请检查 owner/repo/branch/subdirectory 配置";
+  if (status === 403) {
+    return "GitHub API 访问受限或限流，请稍后重试（已自动重试）";
+  }
+  if (fallback?.trim()) return fallback;
+  return `GitHub API error: ${status}`;
+}
 
 function RepoForm({
   initial,
@@ -311,96 +380,119 @@ export default function Skills() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["skills"] }),
   });
 
+  const scanRepoSkills = async (repo: SkillsRepo): Promise<number> => {
+    const repoKind = getRepoKind(repo.owner, repo.repo);
+    if (repoKind !== "skill_bundle") {
+      throw new Error("仅 skill_bundle 仓库允许扫描导入 Skills");
+    }
+
+    const basePath = repo.subdirectory ? `${repo.subdirectory}` : "";
+    const apiUrl = `https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${basePath}?ref=${repo.branch}`;
+    const listing = await fetchGitHubJsonWithRetry(apiUrl);
+    if (!listing.ok) {
+      throw new Error(getGitHubErrorMessage(listing.status, listing.error));
+    }
+
+    const items = listing.data;
+    const skillDirs = Array.isArray(items)
+      ? items.filter(
+          (item): item is GitHubContentItem =>
+            isGitHubContentItem(item) && item.type === "dir",
+        )
+      : [];
+
+    let count = 0;
+    for (const dir of skillDirs) {
+      const manifestOk = await hasSkillManifest(
+        repo.owner,
+        repo.repo,
+        repo.branch,
+        dir.path,
+      );
+      if (!manifestOk) continue;
+
+      const existing = skills.find((s) => s.name === dir.name && s.repo_id === repo.id);
+      if (existing) continue;
+
+      const description = await readSkillDescription(
+        repo.owner,
+        repo.repo,
+        repo.branch,
+        dir.path,
+      );
+
+      const { error } = await supabase.from("skills").insert({
+        name: dir.name,
+        description,
+        repo_id: repo.id,
+        user_id: user!.id,
+      });
+      if (!error) count++;
+    }
+    return count;
+  };
+
   const scanSkills = async (repo: SkillsRepo) => {
     setScanningRepoId(repo.id);
     try {
-      const basePath = repo.subdirectory ? `${repo.subdirectory}` : "";
-      const apiUrl = `https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${basePath}?ref=${repo.branch}`;
-      const resp = await fetch(apiUrl);
-      if (!resp.ok) {
-        if (resp.status === 404) {
-          throw new Error("仓库路径不存在，请检查子目录配置");
-        }
-        throw new Error(`GitHub API error: ${resp.status}`);
-      }
-      const items = await resp.json();
-
-      const skillDirs = Array.isArray(items) ? items.filter((i: any) => i.type === "dir") : [];
-      let count = 0;
-
-      for (const dir of skillDirs) {
-        const existing = skills.find((s) => s.name === dir.name && s.repo_id === repo.id);
-        if (!existing) {
-          let description = "";
-          try {
-            const readmeResp = await fetch(`https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${dir.path}/README.md?ref=${repo.branch}`);
-            if (readmeResp.ok) {
-              const readmeData = await readmeResp.json();
-              const decoded = atob(readmeData.content);
-              const firstLine = decoded.split("\n").find((l: string) => l.trim() && !l.startsWith("#"));
-              description = firstLine?.trim().slice(0, 200) || "";
-            }
-          } catch { /* ignore */ }
-
-          const { error } = await supabase.from("skills").insert({
-            name: dir.name,
-            description,
-            repo_id: repo.id,
-            user_id: user!.id,
-          });
-          if (!error) count++;
-        }
-      }
-
+      const count = await scanRepoSkills(repo);
       queryClient.invalidateQueries({ queryKey: ["skills"] });
       toast({ title: t("skills.scanSuccess").replace("{count}", String(count)) });
-    } catch (e: any) {
-      toast({ title: t("skills.scanFailed"), description: e.message, variant: "destructive" });
+    } catch (error) {
+      toast({
+        title: t("skills.scanFailed"),
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setScanningRepoId(null);
     }
   };
 
   const scanAllSkills = async () => {
-    if (repos.length === 0) return;
+    const scanTargets = repos.filter(
+      (repo) => getRepoKind(repo.owner, repo.repo) === "skill_bundle",
+    );
+    if (scanTargets.length === 0) {
+      toast({
+        title: "没有可扫描仓库",
+        description: "仅 skill_bundle 仓库支持扫描导入。",
+      });
+      return;
+    }
+
     setScanningAll(true);
     let totalCount = 0;
-    for (const repo of repos) {
+    let failedCount = 0;
+    for (const repo of scanTargets) {
       setScanningRepoId(repo.id);
       try {
-        const basePath = repo.subdirectory ? `${repo.subdirectory}` : "";
-        const apiUrl = `https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${basePath}?ref=${repo.branch}`;
-        const resp = await fetch(apiUrl);
-        if (!resp.ok) continue;
-        const items = await resp.json();
-        const skillDirs = Array.isArray(items) ? items.filter((i: any) => i.type === "dir") : [];
-        for (const dir of skillDirs) {
-          const existing = skills.find((s) => s.name === dir.name && s.repo_id === repo.id);
-          if (!existing) {
-            let description = "";
-            try {
-              const readmeResp = await fetch(`https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${dir.path}/README.md?ref=${repo.branch}`);
-              if (readmeResp.ok) {
-                const readmeData = await readmeResp.json();
-                const decoded = atob(readmeData.content);
-                const firstLine = decoded.split("\n").find((l: string) => l.trim() && !l.startsWith("#"));
-                description = firstLine?.trim().slice(0, 200) || "";
-              }
-            } catch { /* ignore */ }
-            const { error } = await supabase.from("skills").insert({ name: dir.name, description, repo_id: repo.id, user_id: user!.id });
-            if (!error) totalCount++;
-          }
-        }
-      } catch { /* ignore */ }
+        totalCount += await scanRepoSkills(repo);
+      } catch {
+        failedCount += 1;
+      }
     }
     setScanningAll(false);
     setScanningRepoId(null);
     queryClient.invalidateQueries({ queryKey: ["skills"] });
-    toast({ title: `一键扫描完成`, description: `共新增 ${totalCount} 个 Skills` });
+    toast({
+      title: "一键扫描完成",
+      description:
+        failedCount > 0
+          ? `新增 ${totalCount} 个 Skills，失败 ${failedCount} 个仓库`
+          : `共新增 ${totalCount} 个 Skills`,
+      variant: failedCount > 0 ? "destructive" : "default",
+    });
   };
 
-  const addPresetRepo = (preset: { owner: string; repo: string; branch?: string }) => {
-    createRepoMutation.mutate({ owner: preset.owner, repo: preset.repo, branch: preset.branch || "main", subdirectory: "", is_default: false });
+  const addPresetRepo = (preset: SkillsRepoPreset) => {
+    createRepoMutation.mutate({
+      owner: preset.owner,
+      repo: preset.repo,
+      branch: preset.branch || "main",
+      subdirectory: "",
+      is_default: preset.repo_kind === "skill_bundle",
+    });
   };
 
   const handleViewChange = (v: string) => {
@@ -417,6 +509,9 @@ export default function Skills() {
     const matchRepo = filterRepo === "all" || skill.repo_id === filterRepo;
     return matchSearch && matchStatus && matchRepo;
   });
+  const scanEligibleRepoCount = repos.filter(
+    (repo) => getRepoKind(repo.owner, repo.repo) === "skill_bundle",
+  ).length;
 
   if (reposLoading || skillsLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -452,10 +547,10 @@ export default function Skills() {
                 variant="outline"
                 size="sm"
                 onClick={scanAllSkills}
-                disabled={scanningAll || scanningRepoId !== null}
+                disabled={scanningAll || scanningRepoId !== null || scanEligibleRepoCount === 0}
               >
                 {scanningAll ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <PlayCircle className="mr-1.5 h-3.5 w-3.5" />}
-                一键扫描
+                一键扫描 ({scanEligibleRepoCount})
               </Button>
             )}
             <Dialog open={repoDialogOpen} onOpenChange={setRepoDialogOpen}>
@@ -481,13 +576,23 @@ export default function Skills() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="justify-start text-xs h-8 font-mono"
+                                  className="justify-between text-xs h-8 font-mono gap-2"
                                   onClick={() => addPresetRepo(p)}
+                                  title={`${p.repo_kind} · ${p.verification.last_verified_at}`}
                                 >
-                                  {p.owner}/{p.repo}
+                                  <span>{p.owner}/{p.repo}</span>
+                                  <span className="text-[10px] uppercase text-muted-foreground">
+                                    {p.verification.verification_status}
+                                  </span>
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent><p>{p.desc}</p></TooltipContent>
+                              <TooltipContent>
+                                <div className="space-y-1 text-xs">
+                                  <p>{p.desc}</p>
+                                  <p>kind: {p.repo_kind}</p>
+                                  <p>verified: {p.verification.last_verified_at}</p>
+                                </div>
+                              </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         ))}
@@ -495,6 +600,9 @@ export default function Skills() {
                     </TabsContent>
                   ))}
                 </Tabs>
+                <p className="mb-4 text-xs text-muted-foreground">
+                  仅 `skill_bundle` 仓库允许扫描导入；其余均作为参考仓库管理。
+                </p>
                 <RepoForm onSave={(data) => createRepoMutation.mutate(data)} saving={createRepoMutation.isPending} />
               </DialogContent>
             </Dialog>
@@ -510,46 +618,52 @@ export default function Skills() {
             </Card>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {repos.map((repo) => (
-                <Card key={repo.id}>
-                  <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <div>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <GitBranch className="h-4 w-4 text-muted-foreground" />
-                        {repo.owner}/{repo.repo}
-                      </CardTitle>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {repo.branch}{repo.subdirectory ? ` / ${repo.subdirectory}` : ""}
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost" size="icon" className="h-7 w-7"
-                        disabled={scanningRepoId === repo.id || scanningAll}
-                        onClick={() => scanSkills(repo)}
-                        title={t("skills.scanSkills")}
-                      >
-                        {scanningRepoId === repo.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingRepo(repo)}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost" size="icon" className="h-7 w-7 text-destructive"
-                        onClick={() => setDeleteRepoTarget(repo)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-2">
-                      {repo.is_default && <Badge variant="secondary" className="text-[10px]">默认</Badge>}
-                      <span className="text-xs text-muted-foreground">{skills.filter((s) => s.repo_id === repo.id).length} Skills</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {repos.map((repo) => {
+                const canScan = getRepoKind(repo.owner, repo.repo) === "skill_bundle";
+                return (
+                  <Card key={repo.id}>
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                      <div>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <GitBranch className="h-4 w-4 text-muted-foreground" />
+                          {repo.owner}/{repo.repo}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {repo.branch}{repo.subdirectory ? ` / ${repo.subdirectory}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7"
+                          disabled={!canScan || scanningRepoId === repo.id || scanningAll}
+                          onClick={() => scanSkills(repo)}
+                          title={canScan ? t("skills.scanSkills") : "仅 skill_bundle 支持扫描"}
+                        >
+                          {scanningRepoId === repo.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingRepo(repo)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                          onClick={() => setDeleteRepoTarget(repo)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-2">
+                        {repo.is_default && <Badge variant="secondary" className="text-[10px]">默认</Badge>}
+                        <Badge variant="outline" className="text-[10px]">
+                          {canScan ? "skill_bundle" : "reference_repo"}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{skills.filter((s) => s.repo_id === repo.id).length} Skills</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
 

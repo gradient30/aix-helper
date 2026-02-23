@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Download, CheckCircle2 } from "lucide-react";
+import { getErrorMessage } from "@/lib/errors";
+import { decodeDeepLinkProviders, type DeepLinkProviderItem } from "@/lib/import-utils";
 
 export default function ImportPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<DeepLinkProviderItem[]>([]);
   const [importing, setImporting] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -19,10 +21,10 @@ export default function ImportPage() {
     const encoded = searchParams.get("data");
     if (encoded) {
       try {
-        const decoded = JSON.parse(decodeURIComponent(atob(encoded)));
-        setData(Array.isArray(decoded) ? decoded : []);
-      } catch {
+        setData(decodeDeepLinkProviders(encoded));
+      } catch (error) {
         toast({ title: "无效的导入链接", variant: "destructive" });
+        console.error("Deep link decode failed:", getErrorMessage(error));
       }
     }
   }, [searchParams]);

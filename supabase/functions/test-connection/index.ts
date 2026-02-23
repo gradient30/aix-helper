@@ -1,12 +1,34 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.96.0";
+import {
+  buildProviderHeaders,
+  resolveProviderProbePlan,
+  withGeminiApiKey,
+} from "./provider-probe.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowOrigin =
+    ALLOWED_ORIGINS.length === 0
+      ? origin || "*"
+      : ALLOWED_ORIGINS.includes(origin)
+        ? origin
+        : "null";
+
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -75,67 +97,74 @@ async function testProvider(body: {
   api_key: string;
   app_type: string;
 }): Promise<{ success: boolean; message: string; latency_ms?: number }> {
-  const { provider_type, base_url, api_key, app_type } = body;
+  const { api_key } = body;
   const start = Date.now();
 
-  // For official login type, no URL test needed
-  if (provider_type === "official") {
-    return { success: true, message: "官方登录类型无需连接测试", latency_ms: 0 };
-  }
-
-  if (!base_url) {
-    return { success: false, message: "未配置 Base URL，无法测试连接" };
-  }
-
-  try {
-    // Try to reach the base URL with a simple models endpoint or health check
-    const testUrls = [
-      `${base_url.replace(/\/$/, "")}/v1/models`,
-      `${base_url.replace(/\/$/, "")}/models`,
-      `${base_url.replace(/\/$/, "")}/health`,
-      base_url,
-    ];
-
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
+  const plan = resolveProviderProbePlan(body);
+  if (!plan) {
+    return {
+      success: false,
+      message: "未配置 Base URL，无法测试连接",
+      latency_ms: Date.now() - start,
     };
-    if (api_key) {
-      headers["Authorization"] = `Bearer ${api_key}`;
-    }
-
-    for (const url of testUrls) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-        const resp = await fetch(url, {
-          method: "GET",
-          headers,
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-        const latency = Date.now() - start;
-
-        if (resp.status >= 200 && resp.status < 500) {
-          // Consume body
-          await resp.text();
-          if (resp.status < 300) {
-            return { success: true, message: `连接成功 (${url})`, latency_ms: latency };
-          }
-          if (resp.status === 401 || resp.status === 403) {
-            return { success: false, message: `认证失败 (${resp.status})，请检查 API Key`, latency_ms: latency };
-          }
-          return { success: true, message: `服务可达 (HTTP ${resp.status})`, latency_ms: latency };
-        }
-        await resp.text();
-      } catch {
-        // Try next URL
-      }
-    }
-
-    return { success: false, message: `无法连接到 ${base_url}，请检查地址是否正确`, latency_ms: Date.now() - start };
-  } catch (err) {
-    return { success: false, message: `连接失败: ${err.message}`, latency_ms: Date.now() - start };
   }
+  let lastStatus = 0;
+  let lastError = "";
+
+  for (const rawUrl of plan.candidateUrls) {
+    try {
+      const url = withGeminiApiKey(rawUrl, plan.authMode, api_key);
+      const headers = buildProviderHeaders(plan.authMode, api_key);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10_000);
+      const resp = await fetch(url, {
+        method: "GET",
+        headers,
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      await resp.text();
+      const latency = Date.now() - start;
+      lastStatus = resp.status;
+
+      if (resp.status >= 200 && resp.status < 300) {
+        return { success: true, message: `连接成功 (${url})`, latency_ms: latency };
+      }
+      if (resp.status === 401 || resp.status === 403) {
+        return {
+          success: false,
+          message: `服务可达，但认证失败 (HTTP ${resp.status})，请检查 API Key`,
+          latency_ms: latency,
+        };
+      }
+      if (resp.status === 404) {
+        // Try next candidate endpoint.
+        lastError = `服务可达，但探测路径不存在 (HTTP 404): ${url}`;
+        continue;
+      }
+      return {
+        success: false,
+        message: `服务返回异常状态 (HTTP ${resp.status})`,
+        latency_ms: latency,
+      };
+    } catch (err) {
+      if (err.name === "AbortError") {
+        lastError = "连接超时 (10s)";
+      } else {
+        lastError = `连接失败: ${err.message}`;
+      }
+      // Continue probing next candidate.
+    }
+  }
+
+  return {
+    success: false,
+    message:
+      lastError ||
+      `无法连接到 ${plan.effectiveBaseUrl}${lastStatus ? ` (HTTP ${lastStatus})` : ""}，请检查地址是否正确`,
+    latency_ms: Date.now() - start,
+  };
 }
 
 async function testMcpServer(body: {
