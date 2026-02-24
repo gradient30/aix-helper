@@ -74,9 +74,9 @@ export function toStringRecord(value: Json | null): Record<string, string> {
   if (!isJsonRecord(value)) return {};
 
   const pairs = Object.entries(value).filter(
-    ([, v]): v is string => typeof v === "string",
+    (entry): entry is [string, string] => typeof entry[1] === "string",
   );
-  return Object.fromEntries(pairs);
+  return Object.fromEntries(pairs) as Record<string, string>;
 }
 
 export function buildMcpServersObject(mcps: McpServer[]): McpServersObject {

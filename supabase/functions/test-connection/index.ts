@@ -83,9 +83,10 @@ Deno.serve(async (req) => {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch (err: unknown) {
+    const e = err instanceof Error ? err : new Error(String(err));
     return new Response(
-      JSON.stringify({ success: false, message: err.message || "服务器错误" }),
+      JSON.stringify({ success: false, message: e.message || "服务器错误" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -148,11 +149,12 @@ async function testProvider(body: {
         message: `服务返回异常状态 (HTTP ${resp.status})`,
         latency_ms: latency,
       };
-    } catch (err) {
-      if (err.name === "AbortError") {
+    } catch (err: unknown) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      if (e.name === "AbortError") {
         lastError = "连接超时 (10s)";
       } else {
-        lastError = `连接失败: ${err.message}`;
+        lastError = `连接失败: ${e.message}`;
       }
       // Continue probing next candidate.
     }
@@ -213,11 +215,12 @@ async function testMcpServer(body: {
       return { success: false, message: `认证失败 (${resp.status})`, latency_ms: latency };
     }
     return { success: true, message: `服务可达 (HTTP ${resp.status})`, latency_ms: latency };
-  } catch (err) {
+  } catch (err: unknown) {
+    const e = err instanceof Error ? err : new Error(String(err));
     const latency = Date.now() - start;
-    if (err.name === "AbortError") {
+    if (e.name === "AbortError") {
       return { success: false, message: "连接超时 (10s)", latency_ms: latency };
     }
-    return { success: false, message: `连接失败: ${err.message}`, latency_ms: latency };
+    return { success: false, message: `连接失败: ${e.message}`, latency_ms: latency };
   }
 }

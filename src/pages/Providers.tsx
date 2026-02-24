@@ -170,7 +170,7 @@ export default function Providers() {
       setTestResults((prev) => ({ ...prev, [provider.id]: result }));
       return result;
     } catch (error) {
-      const result = { success: false, message: getErrorMessage(error) };
+      const result = { success: false, message: getErrorMessage(error), latency_ms: undefined as number | undefined };
       setTestResults((prev) => ({ ...prev, [provider.id]: result }));
       return result;
     } finally {
