@@ -476,7 +476,7 @@ export default function PromptOptimizer() {
             </div>
             <div className="space-y-2">
               <Label>{isZh ? "目标文件" : "Target File"}</Label>
-              <Select value={saveTarget} onValueChange={setSaveTarget}>
+              <Select value={saveTarget} onValueChange={(v) => setSaveTarget(v as typeof saveTarget)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {TARGET_FILES.map((f) => (
