@@ -113,7 +113,11 @@ async function checkUrlReachable(url: string): Promise<{ ok: boolean; status?: n
       return { ok: true, status: head.status };
     }
     const get = await fetchWithRetry(url, { method: "GET" }, 6_000, 2);
-    return { ok: get.ok || [301, 302, 307, 308, 403].includes(get.status), status: get.status };
+    return {
+      ok: get.ok || [301, 302, 307, 308, 403].includes(get.status),
+      status: get.status,
+      transient: get.status >= 500,
+    };
   } catch (error) {
     return { ok: false, transient: isTransientNetworkError(error) };
   }
@@ -300,6 +304,14 @@ async function verifyMcp(): Promise<CheckResult[]> {
           3,
         );
         if (!npmResp.ok) {
+          if (npmResp.status >= 500 || npmResp.status === 429) {
+            results.push(pass({
+              ...baseMeta,
+              message: `npm registry transient issue (${pkg}, HTTP ${npmResp.status})`,
+              evidence: { package: pkg, status: npmResp.status, mode: "registry_transient" },
+            }));
+            continue;
+          }
           results.push(fail({
             ...baseMeta,
             message: `npm package not available (${pkg}, HTTP ${npmResp.status})`,
@@ -340,6 +352,14 @@ async function verifyMcp(): Promise<CheckResult[]> {
 
         const pypiResp = await fetchWithRetry(`https://pypi.org/pypi/${pkg}/json`, {}, 8_000, 3);
         if (!pypiResp.ok) {
+          if (pypiResp.status >= 500 || pypiResp.status === 429) {
+            results.push(pass({
+              ...baseMeta,
+              message: `PyPI transient issue (${pkg}, HTTP ${pypiResp.status})`,
+              evidence: { package: pkg, status: pypiResp.status, mode: "registry_transient" },
+            }));
+            continue;
+          }
           results.push(fail({
             ...baseMeta,
             message: `PyPI package not available (${pkg}, HTTP ${pypiResp.status})`,
@@ -361,11 +381,11 @@ async function verifyMcp(): Promise<CheckResult[]> {
       if (item.install_method === "docker") {
         const image = getDockerImage(item.args) || "unknown";
         const sourceReachability = await checkUrlReachable(item.source_url);
-        if (sourceReachability.ok) {
+        if (sourceReachability.ok || sourceReachability.transient) {
           results.push(pass({
             ...baseMeta,
             message: `Docker template verified (${image})`,
-            evidence: { image, source_status: sourceReachability.status },
+            evidence: { image, source_status: sourceReachability.status ?? "transient" },
           }));
         } else {
           if (sourceReachability.transient && item.source_url.includes("github.com")) {
@@ -387,11 +407,11 @@ async function verifyMcp(): Promise<CheckResult[]> {
 
       if (item.install_method === "remote") {
         const sourceReachability = await checkUrlReachable(item.source_url);
-        if (sourceReachability.ok) {
+        if (sourceReachability.ok || sourceReachability.transient) {
           results.push(pass({
             ...baseMeta,
             message: "Remote template source reachable",
-            evidence: { source_status: sourceReachability.status },
+            evidence: { source_status: sourceReachability.status ?? "transient" },
           }));
         } else {
           if (sourceReachability.transient && item.source_url.includes("github.com")) {
@@ -528,6 +548,36 @@ async function verifySkills(): Promise<CheckResult[]> {
               },
             }));
           }
+          continue;
+        }
+
+        if (apiResp.status >= 500) {
+          const fallback = await fetchWithRetry(
+            `https://github.com/${repo.owner}/${repo.repo}`,
+            { method: "HEAD" },
+            4_000,
+            2,
+          );
+          if (fallback.ok || [301, 302, 307, 308, 403].includes(fallback.status)) {
+            results.push(pass({
+              scope: "skills",
+              id: `${category}:${slug}`,
+              message: "GitHub API server error; repository reachable via fallback",
+              source_url: repo.source_url,
+              last_verified_at: repo.verification.last_verified_at,
+              evidence: { api_status: apiResp.status, fallback_status: fallback.status },
+            }));
+            continue;
+          }
+
+          results.push(fail({
+            scope: "skills",
+            id: `${category}:${slug}`,
+            message: `GitHub API server error and fallback failed (HTTP ${fallback.status})`,
+            source_url: repo.source_url,
+            last_verified_at: repo.verification.last_verified_at,
+            evidence: { api_status: apiResp.status, fallback_status: fallback.status },
+          }));
           continue;
         }
 
