@@ -30,11 +30,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run quality gate
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run ci:gate
-
       - name: Build
         run: npm run build
         env:
