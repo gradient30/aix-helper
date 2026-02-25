@@ -710,6 +710,8 @@ async function main() {
   console.log(`Summary: total=${all.length}, pass=${passCount}, fail=${failCount}`);
 
   if (failCount > 0) {
+    console.error("Failed checks:");
+    console.error(JSON.stringify(all.filter((entry) => entry.status === "fail"), null, 2));
     process.exitCode = 1;
   }
 }
