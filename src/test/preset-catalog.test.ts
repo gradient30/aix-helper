@@ -42,16 +42,16 @@ describe("preset catalog", () => {
     });
   });
 
-  it("skills presets are 54 and legacy broken repos are removed", () => {
+  it("skills presets are 53 and legacy broken repos are removed", () => {
     const categories = Object.values(PRESET_REPOS);
     const all = categories.flatMap((repos) => repos);
-    expect(all).toHaveLength(54);
+    expect(all).toHaveLength(53);
 
     const slugs = new Set(all.map((repo) => `${repo.owner}/${repo.repo}`.toLowerCase()));
     expect(slugs.has("sourcegraph/cody")).toBe(false);
     expect(slugs.has("azimutt/azimutt")).toBe(false);
     expect(slugs.has("sourcegraph/sourcegraph-public-snapshot")).toBe(false);
-    expect(slugs.has("sourcegraph/sourcegraph")).toBe(true);
+    expect(slugs.has("sourcegraph/sourcegraph")).toBe(false);
     expect(slugs.has("azimuttapp/azimutt")).toBe(true);
   });
 
