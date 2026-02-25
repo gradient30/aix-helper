@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   McpPresetGroup,
   PresetVerificationResult,
   VerificationSource,
@@ -151,11 +151,11 @@ export const MCP_PRESETS: Record<string, McpPresetGroup> = {
         ],
         desc: "GitHub 官方 MCP Server（建议 Docker 方式）",
         install_method: "docker",
-        source_url: "https://github.com/github/github-mcp-server",
+        source_url: "https://github.com/modelcontextprotocol/servers/tree/main/src/github",
         reference_tier: "production",
         verification: verification(
           "official_repo",
-          "https://raw.githubusercontent.com/github/github-mcp-server/main/README.md",
+          "https://github.com/modelcontextprotocol/servers/tree/main/src/github/README.md",
           "官方 README 提供 ghcr.io 镜像部署方式。",
           "main",
         ),
