@@ -62,7 +62,7 @@ export const PRESET_REPOS: Record<string, SkillsRepoPreset[]> = {
     repo("sigoden", "aichat", "全能 AI CLI 工具", "reference_repo"),
     repo("continuedev", "continue", "Continue IDE AI 插件", "reference_repo"),
     repo("cline", "cline", "Cline AI 编码助手", "reference_repo"),
-    repo("sourcegraph", "sourcegraph", "Sourcegraph 平台（参考仓库）", "reference_repo"),
+    
   ],
   design: [
     repo("penpot", "penpot", "开源设计平台", "reference_repo"),
