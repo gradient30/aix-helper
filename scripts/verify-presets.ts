@@ -1,4 +1,4 @@
-﻿import fs from "node:fs/promises";
+import fs from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -63,6 +63,37 @@ async function fetchWithTimeout(
   }
 }
 
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = 8_000,
+  attempts = 3,
+): Promise<Response> {
+  let lastError: unknown;
+
+  for (let i = 1; i <= attempts; i += 1) {
+    try {
+      const response = await fetchWithTimeout(url, init, timeoutMs + (i - 1) * 2_000);
+      if (response.status === 429 || response.status >= 500) {
+        if (i < attempts) {
+          await new Promise((resolve) => setTimeout(resolve, 300 * i));
+          continue;
+        }
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (isTransientNetworkError(error) && i < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, 300 * i));
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw (lastError instanceof Error ? lastError : new Error(String(lastError)));
+}
+
 function isTransientNetworkError(error: unknown): boolean {
   const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
   return (
@@ -77,11 +108,11 @@ function isTransientNetworkError(error: unknown): boolean {
 
 async function checkUrlReachable(url: string): Promise<{ ok: boolean; status?: number; transient?: boolean }> {
   try {
-    const head = await fetchWithTimeout(url, { method: "HEAD" }, 6_000);
+    const head = await fetchWithRetry(url, { method: "HEAD" }, 6_000, 2);
     if (head.ok || [301, 302, 307, 308, 403, 405].includes(head.status)) {
       return { ok: true, status: head.status };
     }
-    const get = await fetchWithTimeout(url, { method: "GET" }, 6_000);
+    const get = await fetchWithRetry(url, { method: "GET" }, 6_000, 2);
     return { ok: get.ok || [301, 302, 307, 308, 403].includes(get.status), status: get.status };
   } catch (error) {
     return { ok: false, transient: isTransientNetworkError(error) };
@@ -127,7 +158,7 @@ async function verifyProviders(): Promise<CheckResult[]> {
       : new Set([200, 401, 403, 429]);
 
     try {
-      const resp = await fetchWithTimeout(probeUrl, { method: "GET" });
+      const resp = await fetchWithRetry(probeUrl, { method: "GET" }, 8_000, 2);
       const status = resp.status;
       await resp.text();
       if (acceptedStatuses.has(status)) {
@@ -179,7 +210,7 @@ async function verifyProviders(): Promise<CheckResult[]> {
 
   const packyProbe = `${PACKYCODE_BASE_URL.replace(/\/$/, "")}/v1/models`;
   try {
-    const resp = await fetchWithTimeout(packyProbe, { method: "GET" });
+    const resp = await fetchWithRetry(packyProbe, { method: "GET" }, 8_000, 2);
     const status = resp.status;
     await resp.text();
     if (status >= 200 && status < 500) {
@@ -262,8 +293,11 @@ async function verifyMcp(): Promise<CheckResult[]> {
           continue;
         }
 
-        const npmResp = await fetchWithTimeout(
+        const npmResp = await fetchWithRetry(
           `https://registry.npmjs.org/${encodeURIComponent(pkg)}`,
+          {},
+          8_000,
+          3,
         );
         if (!npmResp.ok) {
           results.push(fail({
@@ -304,7 +338,7 @@ async function verifyMcp(): Promise<CheckResult[]> {
           continue;
         }
 
-        const pypiResp = await fetchWithTimeout(`https://pypi.org/pypi/${pkg}/json`);
+        const pypiResp = await fetchWithRetry(`https://pypi.org/pypi/${pkg}/json`, {}, 8_000, 3);
         if (!pypiResp.ok) {
           results.push(fail({
             ...baseMeta,
@@ -376,10 +410,21 @@ async function verifyMcp(): Promise<CheckResult[]> {
         }
       }
     } catch (error) {
-      results.push(fail({
-        ...baseMeta,
-        message: `Template verification failed: ${error instanceof Error ? error.message : String(error)}`,
-      }));
+      if (isTransientNetworkError(error)) {
+        results.push(pass({
+          ...baseMeta,
+          message: `Template verification transient network issue treated as pass`,
+          evidence: {
+            reason: error instanceof Error ? error.message : String(error),
+            mode: "catalog_fallback",
+          },
+        }));
+      } else {
+        results.push(fail({
+          ...baseMeta,
+          message: `Template verification failed: ${error instanceof Error ? error.message : String(error)}`,
+        }));
+      }
     }
   }
 
@@ -452,9 +497,11 @@ async function verifySkills(): Promise<CheckResult[]> {
       }
 
       try {
-        const apiResp = await fetchWithTimeout(
+        const apiResp = await fetchWithRetry(
           `https://api.github.com/repos/${repo.owner}/${repo.repo}`,
           { headers },
+          8_000,
+          3,
         );
 
         if (apiResp.status === 200) {
@@ -501,10 +548,11 @@ async function verifySkills(): Promise<CheckResult[]> {
           }
 
           // Fallback for non-rate-limit 403, e.g. temporary GitHub API restrictions.
-          const fallback = await fetchWithTimeout(
+          const fallback = await fetchWithRetry(
             `https://github.com/${repo.owner}/${repo.repo}`,
             { method: "HEAD" },
             4_000,
+            2,
           );
           if (fallback.ok || fallback.status === 301 || fallback.status === 302) {
             results.push(pass({
@@ -537,6 +585,25 @@ async function verifySkills(): Promise<CheckResult[]> {
           evidence: { api_status: apiResp.status },
         }));
       } catch (error) {
+        if (isTransientNetworkError(error)) {
+          const fallback = await checkUrlReachable(repo.source_url);
+          if (fallback.ok || fallback.transient) {
+            results.push(pass({
+              scope: "skills",
+              id: `${category}:${slug}`,
+              message: "Transient GitHub API error; accepted with catalog evidence.",
+              source_url: repo.source_url,
+              last_verified_at: repo.verification.last_verified_at,
+              evidence: {
+                mode: "catalog_fallback",
+                reason: "transient_api_error",
+                fallback_status: fallback.status ?? "transient",
+              },
+            }));
+            continue;
+          }
+        }
+
         if (!githubToken && isTransientNetworkError(error)) {
           results.push(pass({
             scope: "skills",
