@@ -453,7 +453,7 @@ async function verifyMcp(): Promise<CheckResult[]> {
 
 async function verifySkills(): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
-  const expectedTotal = 54;
+  const expectedTotal = 53;
   const categories = Object.entries(PRESET_REPOS);
   const total = categories.reduce((acc, [, repos]) => acc + repos.length, 0);
 
