@@ -4,7 +4,7 @@ import type {
   VerificationSource,
 } from "./types";
 
-const VERIFIED_AT = "2026-02-23";
+const VERIFIED_AT = "2026-02-26";
 
 function verification(
   verification_source: VerificationSource,
@@ -151,12 +151,12 @@ export const MCP_PRESETS: Record<string, McpPresetGroup> = {
         ],
         desc: "GitHub 官方 MCP Server（建议 Docker 方式）",
         install_method: "docker",
-        source_url: "https://github.com/modelcontextprotocol/servers/tree/main/src/github",
+        source_url: "https://github.com/github/github-mcp-server",
         reference_tier: "production",
         verification: verification(
           "official_repo",
-          "https://github.com/modelcontextprotocol/servers/tree/main/src/github/README.md",
-          "官方 README 提供 ghcr.io 镜像部署方式。",
+          "https://raw.githubusercontent.com/github/github-mcp-server/main/README.md",
+          "官方 README 提供 ghcr.io 镜像部署方式（独立仓库）。",
           "main",
         ),
       },
@@ -218,4 +218,3 @@ export const MCP_PRESETS: Record<string, McpPresetGroup> = {
 };
 
 export const MCP_PRESET_KEYS = Object.keys(MCP_PRESETS);
-
