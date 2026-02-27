@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "last_run_at": "2026-02-27T18:22:35+08:00",
+  "last_event_time": "2026-02-26T18:08:54+08:00",
+  "last_source_id": "commit-9151a6b9a4738ce365240e490c8074fb0e854548",
+  "total_processed_sources": 113,
+  "last_run_stats": {
+    "created": 66,
+    "updated": 47,
+    "skipped_duplicate": 0,
+    "skipped_by_cursor": 0,
+    "skipped_bad_lines": 0
+  }
+}

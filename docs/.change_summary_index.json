@@ -1,0 +1,521 @@
+{
+  "schema_version": 1,
+  "next_ids": {
+    "BUG": 3,
+    "REQ": 62,
+    "OPT": 4
+  },
+  "by_fingerprint": {
+    "5b43b48399c887d2dd739752fafd23eb4ec33d04": {
+      "entry_id": "REQ-0001",
+      "event_type": "requirement",
+      "title": "Update GitHub Actions to deploy on push events",
+      "component": ".github"
+    },
+    "dfd45f77fe45a5716a789d2f5eb4caa7219d3f77": {
+      "entry_id": "REQ-0002",
+      "event_type": "requirement",
+      "title": "Update deployment trigger for Cloudflare Pages",
+      "component": ".github"
+    },
+    "9480b780b2fb21e6ac7fdc9da73e541b70229086": {
+      "entry_id": "REQ-0003",
+      "event_type": "requirement",
+      "title": "add:添加自动化推荐脚本",
+      "component": "git-sync-to-tcloud.sh"
+    },
+    "f17a0be82fdccf5550ef41d83083aea64900c08a": {
+      "entry_id": "REQ-0004",
+      "event_type": "requirement",
+      "title": "template: new_style_vite_react_shadcn_ts_testing_2026-01-08",
+      "component": "src"
+    },
+    "d249c603300b40c44417af4de06f0fc28b0ae7c7": {
+      "entry_id": "REQ-0005",
+      "event_type": "requirement",
+      "title": "Updated plan file",
+      "component": ".lovable"
+    },
+    "247e2c983b05b13ad4f3669ede99fc52c6de455a": {
+      "entry_id": "REQ-0006",
+      "event_type": "requirement",
+      "title": "Changes",
+      "component": "src"
+    },
+    "3db2e32d27f7377e6bec6eef8f3228b613168437": {
+      "entry_id": "REQ-0007",
+      "event_type": "requirement",
+      "title": "Connected to Lovable Cloud",
+      "component": "repo"
+    },
+    "64974f3a63137ad6317824ac2e0e9d7d96c0d482": {
+      "entry_id": "REQ-0008",
+      "event_type": "requirement",
+      "title": "Phase 2 MCP and Prompts support",
+      "component": "repo"
+    },
+    "7e60254ac42c123d7551ffdd706fc78e51667f33": {
+      "entry_id": "REQ-0009",
+      "event_type": "requirement",
+      "title": "Add connection test feature",
+      "component": "repo"
+    },
+    "5108b915b08443bcbd53b84bae649ea681cb8aae": {
+      "entry_id": "REQ-0010",
+      "event_type": "requirement",
+      "title": "Add i18n and UI toggles",
+      "component": "repo"
+    },
+    "3a90f99e294129c65aae9869ed6e1b01ca82544e": {
+      "entry_id": "REQ-0011",
+      "event_type": "requirement",
+      "title": "Add per-page Help manuals",
+      "component": "repo"
+    },
+    "15db1356af6364f0d511748050327022352331af": {
+      "entry_id": "REQ-0012",
+      "event_type": "requirement",
+      "title": "自动填充 Provider Base URL",
+      "component": "repo"
+    },
+    "688ee050a4c37d16b155526b207fac61065074a2": {
+      "entry_id": "REQ-0013",
+      "event_type": "requirement",
+      "title": "Add MCP templates",
+      "component": "repo"
+    },
+    "531fa260f4cf3d890ef102d2b57033171bb6489a": {
+      "entry_id": "REQ-0014",
+      "event_type": "requirement",
+      "title": "增强 MCP/Provider 字段标记",
+      "component": "repo"
+    },
+    "a04e460f8d1b282b1543d11427a27295157e1d74": {
+      "entry_id": "REQ-0015",
+      "event_type": "requirement",
+      "title": "Integrate platform presets",
+      "component": "repo"
+    },
+    "1483f29061bb162aa2b9ab586db2b60637fbe49f": {
+      "entry_id": "REQ-0016",
+      "event_type": "requirement",
+      "title": "Reorganized MCP/Skills presets",
+      "component": "repo"
+    },
+    "43a25d30fbb225429ee8bc2318909307a5f7cd70": {
+      "entry_id": "REQ-0017",
+      "event_type": "requirement",
+      "title": "Refactor add Skills presets",
+      "component": "repo"
+    },
+    "a5315b70288a5e32ab7ce8f397a6dc57d74d18f1": {
+      "entry_id": "OPT-0001",
+      "event_type": "optimization",
+      "title": "优化 Skills 展示与提示",
+      "component": "repo"
+    },
+    "de99bf1560b2fd3d04a9347f9e79064d02ee5517": {
+      "entry_id": "REQ-0018",
+      "event_type": "requirement",
+      "title": "Add prompt optimizer UI",
+      "component": "repo"
+    },
+    "892016aa9253966c3c4432e5d83fb3cecff0d353": {
+      "entry_id": "REQ-0019",
+      "event_type": "requirement",
+      "title": "Add CLI guide page and routing",
+      "component": "repo"
+    },
+    "1133c4ff20b02e99b6cb0a7d05359b73512609d3": {
+      "entry_id": "REQ-0020",
+      "event_type": "requirement",
+      "title": "Enhance HelpDialog and content",
+      "component": "repo"
+    },
+    "7dbad942041998fd9c90f38acb851ef5fc267ae9": {
+      "entry_id": "REQ-0021",
+      "event_type": "requirement",
+      "title": "Add Skills Guide page",
+      "component": "repo"
+    },
+    "eeaa57706ce019956d29aaee1822bee318ac6ebb": {
+      "entry_id": "REQ-0022",
+      "event_type": "requirement",
+      "title": "Add SetupGuide page and routes",
+      "component": "repo"
+    },
+    "68a0d4537c210a5c098c28c538a3877f724a3716": {
+      "entry_id": "REQ-0023",
+      "event_type": "requirement",
+      "title": "Add AI Glossary page",
+      "component": "repo"
+    },
+    "2c1fe169e6cd9948ef50b4e29b504a018ff36a66": {
+      "entry_id": "REQ-0024",
+      "event_type": "requirement",
+      "title": "Fix test-connection key and add local deploy guidance",
+      "component": "repo"
+    },
+    "8aa11e4739754184aaaefeab0cb3184a4c6aca26": {
+      "entry_id": "REQ-0025",
+      "event_type": "requirement",
+      "title": "Enhance confirmations and bulk actions",
+      "component": "repo"
+    },
+    "ce6354f19388e37ec0729e963e37963506976536": {
+      "entry_id": "OPT-0002",
+      "event_type": "optimization",
+      "title": "重构 Export 多格式导出",
+      "component": "repo"
+    },
+    "fae1971d67385f2e2b01c4759a3c97deb0fcfc74": {
+      "entry_id": "REQ-0026",
+      "event_type": "requirement",
+      "title": "Rewrite codex export to TOML",
+      "component": "repo"
+    },
+    "a25f96da4b730848c9a78960d59093c049c60f4c": {
+      "entry_id": "REQ-0027",
+      "event_type": "requirement",
+      "title": "Update AI help and models refs",
+      "component": "repo"
+    },
+    "8f2e3ea5c6ac126db6c3d2473526a49e920d4213": {
+      "entry_id": "REQ-0028",
+      "event_type": "requirement",
+      "title": "Update site info for publish",
+      "component": "index.html"
+    },
+    "ad5d1e6275f54982224004dfb6f1ca72432c813d": {
+      "entry_id": "REQ-0029",
+      "event_type": "requirement",
+      "title": "AI Helper branding and path updates",
+      "component": "repo"
+    },
+    "a0ca36a5997b006d0dcc586509a4d9ed75cc3994": {
+      "entry_id": "REQ-0030",
+      "event_type": "requirement",
+      "title": "更新 CLI 指南与模型数据",
+      "component": "repo"
+    },
+    "da4c303476363559364ed0841b6bfc1d27042cfd": {
+      "entry_id": "REQ-0031",
+      "event_type": "requirement",
+      "title": "更新模型信息至2026",
+      "component": "repo"
+    },
+    "8b761e9086efd01aa479780f05dcf10a35c74016": {
+      "entry_id": "REQ-0032",
+      "event_type": "requirement",
+      "title": "Changes",
+      "component": ".github"
+    },
+    "a65ea898a97b83b66db68119d2fa3ce73d98bb8e": {
+      "entry_id": "REQ-0033",
+      "event_type": "requirement",
+      "title": "Deploy CI/CD for hosting",
+      "component": "repo"
+    },
+    "3c5e4bdbe7a79dd0be559713405a2ab8046b59b6": {
+      "entry_id": "REQ-0034",
+      "event_type": "requirement",
+      "title": "Update VITE_BASE_URL in deploy-pages.ym",
+      "component": ".github"
+    },
+    "ae0aff6dbcc5aaab9ded38c2dbb5e9122c11fc14": {
+      "entry_id": "REQ-0035",
+      "event_type": "requirement",
+      "title": "Update base variable in 404.html for redirection",
+      "component": "public"
+    },
+    "00b8e46a4020d4a7ab1dbbfb827f8d747a41aa4e": {
+      "entry_id": "REQ-0036",
+      "event_type": "requirement",
+      "title": "Switch to npm install in CI",
+      "component": "repo"
+    },
+    "17e02a63bc6c033a51a3bcecac4e342217258043": {
+      "entry_id": "REQ-0037",
+      "event_type": "requirement",
+      "title": "Changes",
+      "component": "DEPLOY_GUIDE.md"
+    },
+    "19b9149bf2f5f196ccf1b4aff5f6bad45020a0b4": {
+      "entry_id": "BUG-0001",
+      "event_type": "bug",
+      "title": "修复 npm ci坑",
+      "component": "repo"
+    },
+    "b4d17e831bc73c0629485d5e7f6a3d9afe7b3d29": {
+      "entry_id": "REQ-0038",
+      "event_type": "requirement",
+      "title": "Fix GitHub Pages base handling",
+      "component": "repo"
+    },
+    "19a1b48dd47c285057a24c78be1c8d18528be6e3": {
+      "entry_id": "REQ-0039",
+      "event_type": "requirement",
+      "title": "Changes",
+      "component": "index.html"
+    },
+    "bcbd2a15dc89d8fdb248a1fc8466c2a699cb7916": {
+      "entry_id": "REQ-0040",
+      "event_type": "requirement",
+      "title": "Rename UI and fix navigation",
+      "component": "repo"
+    },
+    "cf8fc82ba19b57e17550663ce4241b79c744aa21": {
+      "entry_id": "REQ-0041",
+      "event_type": "requirement",
+      "title": "Update GitHub Pages deployment instructions",
+      "component": "DEPLOY_GUIDE.md"
+    },
+    "7dd56cf5d9e67e1e405241984028b7c02854faa4": {
+      "entry_id": "OPT-0003",
+      "event_type": "optimization",
+      "title": "优化 Cloudflare 部署文档",
+      "component": "repo"
+    },
+    "857356dabdb1e4a1ed21429dec1287e502089104": {
+      "entry_id": "REQ-0042",
+      "event_type": "requirement",
+      "title": "传递 Cloudflare 凭证到工作流",
+      "component": "repo"
+    },
+    "fae44d7af7b3e3ffdfe90ae224b6ecf6045e6443": {
+      "entry_id": "REQ-0043",
+      "event_type": "requirement",
+      "title": "Code edited in Lovable Code Editor",
+      "component": ".github"
+    },
+    "6c1666b2dbaf6c8ff5741f5bcd315c2f53bf89c4": {
+      "entry_id": "REQ-0044",
+      "event_type": "requirement",
+      "title": "Code edited in Lovable Code Editor",
+      "component": "DEPLOY_GUIDE.md"
+    },
+    "cbc8e7429fe684796dd420bcb09d068b8263090b": {
+      "entry_id": "REQ-0045",
+      "event_type": "requirement",
+      "title": "更新 Cloudflare 文档提示",
+      "component": "repo"
+    },
+    "f1541373dffcfb0d047edfa55f267c7c65c0b076": {
+      "entry_id": "REQ-0046",
+      "event_type": "requirement",
+      "title": "修正 Cloudflare 部署",
+      "component": "repo"
+    },
+    "9e1dc89f9be2d27a50075b412227d07f8dfc4ae5": {
+      "entry_id": "REQ-0047",
+      "event_type": "requirement",
+      "title": "feat:codex enchance",
+      "component": "src"
+    },
+    "6903dfca6c2dd42057ba68d715b0a1927cc421a0": {
+      "entry_id": "REQ-0048",
+      "event_type": "requirement",
+      "title": "feat:codex enchance",
+      "component": "reports"
+    },
+    "b29baf2aad8c5c456952942876d6d7a9d191828c": {
+      "entry_id": "REQ-0049",
+      "event_type": "requirement",
+      "title": "Fix TS type issues across code",
+      "component": "repo"
+    },
+    "e93797c63d459b5f270a87362c51fb21cbd78dc3": {
+      "entry_id": "REQ-0050",
+      "event_type": "requirement",
+      "title": "Changes",
+      "component": "vite.config.ts"
+    },
+    "c9941e0fa29ae7cba59a2ca8194fbc89eb1a5fb4": {
+      "entry_id": "REQ-0051",
+      "event_type": "requirement",
+      "title": "Add env vars fallback",
+      "component": "repo"
+    },
+    "dbdff7008b007d8efc115dfac0b63aa43951c78d": {
+      "entry_id": "BUG-0002",
+      "event_type": "bug",
+      "title": "fix:verify-presets.ts 在校验 MCP/npm/PyPI/GitHub 时，偶发 fetch failed 会直接记 fail",
+      "component": "scripts"
+    },
+    "cb777b60f8fdf2ef727ae608e1da54e5703850d9": {
+      "entry_id": "REQ-0052",
+      "event_type": "requirement",
+      "title": "Remove quality gate step from deploy workflow",
+      "component": ".github"
+    },
+    "435937db38c401a6e96af73d10f19d6b94b5c82f": {
+      "entry_id": "REQ-0053",
+      "event_type": "requirement",
+      "title": "修改部署脚本为监听质量门禁通过后再执行",
+      "component": ".github"
+    },
+    "812603d56863d247d36604671482fbf199e92fe2": {
+      "entry_id": "REQ-0054",
+      "event_type": "requirement",
+      "title": "test quality gate",
+      "component": ".github"
+    },
+    "a1cf41a303deef9191c47a7d2b0768ccccfb92a6": {
+      "entry_id": "REQ-0055",
+      "event_type": "requirement",
+      "title": "放宽网络波动导致的质量门禁失效",
+      "component": "scripts"
+    },
+    "4f798fcf9802f1914154b8a9f33b5e59f3cef920": {
+      "entry_id": "REQ-0056",
+      "event_type": "requirement",
+      "title": "test quality gate",
+      "component": "scripts"
+    },
+    "6b3bc40ce018beb82e7b4430a57923a4cf5882cd": {
+      "entry_id": "REQ-0057",
+      "event_type": "requirement",
+      "title": "Remove legacy sourcegraph preset and adjust tests",
+      "component": "repo"
+    },
+    "38a0daea02585a4b7c523631ba94966b2a7432ac": {
+      "entry_id": "REQ-0058",
+      "event_type": "requirement",
+      "title": "Update source URL and verification reference for MCP",
+      "component": "src"
+    },
+    "2616495e69f0cab4f0981dbe5d70fda3b63a8449": {
+      "entry_id": "REQ-0059",
+      "event_type": "requirement",
+      "title": "Disable react-refresh only-export-components rule",
+      "component": "eslint.config.js"
+    },
+    "2f9b2ada8299f089388aa6a674fb7a871ddd354c": {
+      "entry_id": "REQ-0060",
+      "event_type": "requirement",
+      "title": "Fix expected total in verifySkills function",
+      "component": "scripts"
+    },
+    "c2bbea3689a5f97397656c952be3699b79e377ba": {
+      "entry_id": "REQ-0061",
+      "event_type": "requirement",
+      "title": "Update VERIFIED_AT date and source URLs in mcp.ts",
+      "component": "src"
+    }
+  },
+  "processed_source_ids": {
+    "commit-62fed651b67f77b71f5b917ddb6760f87dbe40fd": "2026-02-27T12:01:16+08:00",
+    "commit-0761fe8217fb5b366e75bb488d6b4c59c0ab6c18": "2026-02-27T12:02:07+08:00",
+    "commit-0351bcafe630681b5f77c0ed5cdcbd86990c1c82": "2026-02-27T17:50:05+08:00",
+    "commit-b331aa1a7d54e9db10920729709d1ff849c8e2ea": "2025-01-01T00:00:00Z",
+    "commit-38d277b497def141c7281440e0c1fb6a1db8ecf0": "2026-02-17T13:49:35Z",
+    "commit-f4d17d0e76eaf855916a4cd1f09c2feb120d35ec": "2026-02-17T13:55:25Z",
+    "commit-67d08f19a812fa3c08f39cdc4ea9446cc8e0b9e9": "2026-02-17T13:55:26Z",
+    "commit-8f2cf3fc3689d8f8fe5e313bf6ffa4b597085e3b": "2026-02-17T14:05:45Z",
+    "commit-b167769d4438e33373665814b17d4dc0b29e0abe": "2026-02-17T14:05:46Z",
+    "commit-1472679bfbf4eab7ef7114343dba34c7a09a3807": "2026-02-17T14:22:18Z",
+    "commit-0510cc22710049cb68ca8466fb4ae83a7a10abca": "2026-02-17T14:22:18Z",
+    "commit-bc22b82835940f7711be890bb7a13e733e6a8e7e": "2026-02-17T14:30:16Z",
+    "commit-0455baac026221b17e160c4e470a44c254896ae7": "2026-02-17T14:30:17Z",
+    "commit-5bacb3dcc4e063021198e6df103510331d959967": "2026-02-17T14:44:59Z",
+    "commit-5f70ac720d239b482117764ded56b94d6e21ccac": "2026-02-17T14:45:00Z",
+    "commit-5fc6807e20342bd8a66baf199bcdd4eb7cf91715": "2026-02-17T15:02:55Z",
+    "commit-942210a2e2468c68e6e1b69820732e248a558476": "2026-02-17T15:02:56Z",
+    "commit-822c007c93af7b0949d57f28eba0e5b3983263d7": "2026-02-17T15:09:04Z",
+    "commit-e3a7f7f0794f364cb0c0edf98a35d521c204185a": "2026-02-17T15:09:05Z",
+    "commit-0f8b8e211f75536f60e8764aa253895707ad5829": "2026-02-17T15:25:13Z",
+    "commit-defc5fe862256640625ade5a29a6651afe55703e": "2026-02-17T15:28:16Z",
+    "commit-097f27740acb35606c6b6dc71c5bcd1eee6c94b2": "2026-02-17T15:28:16Z",
+    "commit-651fff1c37498efd2dae246094ee97c2c1df08ea": "2026-02-17T15:43:03Z",
+    "commit-80dadd74fdd1200b96240383ad894541d5126572": "2026-02-17T15:43:04Z",
+    "commit-d9ab9d1c4114f3511330e302b92cba05b257df6f": "2026-02-17T16:09:23Z",
+    "commit-333086426c8d26875ab8cc7d11b905f38fbe145c": "2026-02-17T16:10:45Z",
+    "commit-64127d3f99995d5b18c6a84d75bd4a44166f6e91": "2026-02-17T16:10:46Z",
+    "commit-143ea4bda71db20612b3a17585c1d7773d23fe46": "2026-02-17T16:13:31Z",
+    "commit-2e6f96b10f66a9647d0183497fefd5ab7568a40b": "2026-02-17T16:13:32Z",
+    "commit-692e135dbfba17efeeb26f245486d4981b39f2fe": "2026-02-17T16:18:28Z",
+    "commit-ff8578812d78b79c69ae2a36e45a0c77bfd21c2d": "2026-02-17T16:18:29Z",
+    "commit-a7e1f0e8019e6b87abda4576f2a6d993e947387b": "2026-02-17T16:26:33Z",
+    "commit-bfca156ec9b7d1ded4fd13d4566677c4f31404e1": "2026-02-17T16:34:47Z",
+    "commit-8044f9793f6f16d9abea916f05b68d9972b2e87e": "2026-02-17T16:34:48Z",
+    "commit-09c961a556f90fb7b612f141e1df9a505adae2fd": "2026-02-17T16:46:38Z",
+    "commit-e5c48cc662f6ddddf14df06bf78ae6ec3b748f6b": "2026-02-17T16:49:29Z",
+    "commit-e9e8577c1e63d1e7e52fff0ee52382fa0b25e352": "2026-02-17T16:49:30Z",
+    "commit-67500b5d003443b4df2bb14c732bb5caa9d5cc2b": "2026-02-17T17:07:47Z",
+    "commit-013ea21268c7b974487d3dd4a59938397e03c07b": "2026-02-17T17:07:48Z",
+    "commit-6e68459626f8adafbc04abf84b2a9df555dfb91e": "2026-02-17T17:18:06Z",
+    "commit-3e81678e37ab9d084aef9e93f5252c3e3bfdb6f5": "2026-02-17T17:22:17Z",
+    "commit-e4676a79b7cbff99a21310b5e13975cc80083c9c": "2026-02-17T17:22:18Z",
+    "commit-dcdf45fe60a49c2ee50fe25308ee196b4224d3f1": "2026-02-17T17:27:28Z",
+    "commit-1445cc1d7cb6b41ac67f398179a843452e78034c": "2026-02-17T17:31:26Z",
+    "commit-9551274dedb194e45c13757285a2b518052d046c": "2026-02-17T17:31:27Z",
+    "commit-833235b9264c97af59cd6722ef72b1cb5fd8912a": "2026-02-17T17:37:35Z",
+    "commit-f59fcd95f6765007a8c895c347278175e3184528": "2026-02-17T17:42:37Z",
+    "commit-48dbb0cda3b6bd7b59ce60600d8c93155b38bdaa": "2026-02-17T17:42:38Z",
+    "commit-6065f5f06c316d9135dc30465f14a0ed047424fb": "2026-02-18T03:30:52Z",
+    "commit-05d0eae7ef2968f65cca2567267333c81416a893": "2026-02-18T03:32:51Z",
+    "commit-6de7e0c3ba467efee74fa37b89566e549f5483ba": "2026-02-18T03:32:51Z",
+    "commit-bb8157e4b37c430a3463408b05ea42666953da99": "2026-02-18T04:10:15Z",
+    "commit-ac596c1bb7fac1b87d53398a4a10c2a4d7e44d27": "2026-02-18T04:10:15Z",
+    "commit-81b0a5e56f4ee7a03595abb00e15b950d77f1873": "2026-02-18T04:43:00Z",
+    "commit-7d188de61d6f743f9a77142782ebf19bde80cacb": "2026-02-18T04:46:35Z",
+    "commit-afaadd9ed8678f083e58edfc2ecd46029e0be727": "2026-02-18T04:46:35Z",
+    "commit-01f86227fd06a6f05326ca1bcd0afea44ed46f14": "2026-02-18T05:35:06Z",
+    "commit-43acefe60b49802b8201efd62c4d03582d51528d": "2026-02-18T05:37:44Z",
+    "commit-2371712dcbda3b7c0124d5387be1b0d82a382efd": "2026-02-18T05:37:45Z",
+    "commit-8535459feeaf0eee20c223ad52ae2e580252e2cb": "2026-02-18T05:53:36Z",
+    "commit-270fb1b654d4007f496de470865acb5654f88856": "2026-02-18T05:53:37Z",
+    "commit-fc759690e816a2665d35cfec0c721d170406d296": "2026-02-18T05:53:40Z",
+    "commit-f89d4e60b65d21cdbeca0a283a5a008198a49294": "2026-02-18T06:05:27Z",
+    "commit-c92a931c51c2cbe5851e2d1672c4ff51f4994014": "2026-02-18T06:05:27Z",
+    "commit-1dfc843102efab552a36883db7644ceb06b584b9": "2026-02-18T06:14:39Z",
+    "commit-1e50f89b79e8ca638443d887c549e6cbcffe2682": "2026-02-18T06:14:39Z",
+    "commit-b9f6afb8415ec111e0ea10827f2de59754185738": "2026-02-18T06:54:19Z",
+    "commit-4442c824d1c01693f61a3acb5acf5efc98bdce0f": "2026-02-18T06:54:20Z",
+    "commit-ff5166e94f9fa3cca1ebbf2fd15b3871b98baf0a": "2026-02-18T09:54:02Z",
+    "commit-887e2624aa4bec6a3349daa9214cbcb703c77bc9": "2026-02-18T13:38:50Z",
+    "commit-8b9a700a4fbd554f6bc20ca3e849a2e7f42aa937": "2026-02-18T13:38:51Z",
+    "commit-e0af545b094a81aa496318ce93847218ba633e6e": "2026-02-19T10:08:21+08:00",
+    "commit-87f081c2122bbf53e30542e984e6e9d6f2b609f2": "2026-02-19T10:09:55+08:00",
+    "commit-71219326b204cd178432bbc023264c647293f1e8": "2026-02-19T02:25:54Z",
+    "commit-341d83af7e4b590fd3600a78ebdef7c159902f7e": "2026-02-19T02:25:55Z",
+    "commit-b6bb806e121d7892fb591ec1d972525289a171b3": "2026-02-19T02:29:02Z",
+    "commit-d1f6271608d5ad02eb275f14ad7e722a64bebb9b": "2026-02-19T02:29:02Z",
+    "commit-30b493c46c7849fa15d363592a99b411001474d1": "2026-02-19T02:45:57Z",
+    "commit-d60f1913eab66954dab334645b7249b9ed9bc0e0": "2026-02-19T02:45:57Z",
+    "commit-37f2b3cb36b6a0713843d4df2d799293aa67a872": "2026-02-19T10:13:54Z",
+    "commit-669ee49efd9401799413286f40cf3a4f50a9e613": "2026-02-19T10:13:54Z",
+    "commit-c398280437a6134da2a0d79beae56c21e08a53ac": "2026-02-19T18:20:20+08:00",
+    "commit-67e288d391ddd341d8d7a6de700798daf0deadaa": "2026-02-19T10:20:36Z",
+    "commit-d326b1f63b32996b98922aebf7100c88e1ff6331": "2026-02-19T11:27:16Z",
+    "commit-0ba6d60514a118e9cc496b225bf72a6b29d33345": "2026-02-19T11:27:17Z",
+    "commit-abb549492de324aa8791052bb687d4c486b1ac60": "2026-02-19T11:46:48Z",
+    "commit-7add4d03836f0c3d42e52ef33ec6bec82d3ddd98": "2026-02-19T11:46:48Z",
+    "commit-651ca8e495d22e7a9300be3c4c984aca2ba2c79f": "2026-02-19T12:00:18Z",
+    "commit-b1fc62c5bbe932af794d12403955c352b8e67dd8": "2026-02-19T12:09:05Z",
+    "commit-9e4668ba7d2778e58d091aff7f1e875f8eca0b6b": "2026-02-19T12:10:50Z",
+    "commit-ed8872ad06d1e22843d628018d17ee8cf857d9d8": "2026-02-19T12:10:50Z",
+    "commit-52dcdc4fdbf9cd4fbea9dc5a5a079a0ad1276953": "2026-02-19T12:34:58Z",
+    "commit-530547fbba09afd73374e9b36998c850a5a1d399": "2026-02-19T12:34:58Z",
+    "commit-5f5c47e1497ff526cd77ed303c7004f22ebff977": "2026-02-24T00:06:33+08:00",
+    "commit-ea7bb04b663cb2be086870b98b6d1757dcb61a5c": "2026-02-24T00:12:11+08:00",
+    "commit-dda853f13bc292483fbbbd6275ebca231785a315": "2026-02-24T08:37:53Z",
+    "commit-255ace8643025712583702c4bdca6498d7e144bd": "2026-02-24T08:40:09Z",
+    "commit-f41bbe445fb730cf7c8971d9e87379ef27f98500": "2026-02-24T08:40:11Z",
+    "commit-0f9f791ef59c93bfeed9b5e663f4da943da6380e": "2026-02-25T01:46:07Z",
+    "commit-5dd10a998ca84b8c22b2828f7755e112fbb535b7": "2026-02-25T01:46:08Z",
+    "commit-0a74f791c51b8c03c0ad865385ae6f034702fa78": "2026-02-25T21:46:58+08:00",
+    "commit-225f63718fe4f3390cee72dfe0f9a65c6c52db7d": "2026-02-25T21:51:38+08:00",
+    "commit-c4b32e11a9609d5a7c215456beb45b2884965e27": "2026-02-25T22:19:49+08:00",
+    "commit-07fe9695a58ea6b76709ffcb2c9ef5705e363bf7": "2026-02-25T22:20:14+08:00",
+    "commit-74fb238fc90e29f0aa0ce80e9b1b79d302cfca4d": "2026-02-25T22:25:50+08:00",
+    "commit-2a9ba8b978773a16b583151aff43e06a4eef4aa6": "2026-02-25T22:38:53+08:00",
+    "commit-6348e89cad593ec0dd5c13d5974ffda28b04fec7": "2026-02-25T23:10:27+08:00",
+    "commit-18cdd60cff275b07cfbd8915c7834116529eb42d": "2026-02-25T15:20:23Z",
+    "commit-72147c36b895911d7d47426034d73c3bab83c3b8": "2026-02-25T15:20:23Z",
+    "commit-cb7cdacfb575e5149c6c86e8384a80e7e46e66c1": "2026-02-25T23:23:34+08:00",
+    "commit-ecc2d61b920c26ab864ed9b6d53da03cfab2071d": "2026-02-25T23:24:50+08:00",
+    "commit-be8aed96b911b18a61e4ea9a0a5b92f99b38ca56": "2026-02-26T18:06:17+08:00",
+    "commit-9151a6b9a4738ce365240e490c8074fb0e854548": "2026-02-26T18:08:54+08:00"
+  }
+}
