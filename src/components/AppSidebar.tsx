@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { APP_VERSION_DISPLAY } from "@/config/app-version";
 import {
   Sidebar,
   SidebarContent,
@@ -43,7 +44,12 @@ export function AppSidebar() {
             <Zap className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-sidebar-foreground">AIx助手</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-sidebar-foreground">AIx助手</h2>
+              <span className="inline-flex items-center rounded-md border border-sidebar-border bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-medium leading-none text-sidebar-foreground/80">
+                {APP_VERSION_DISPLAY}
+              </span>
+            </div>
             <p className="text-xs text-sidebar-foreground/60">{t("nav.platform")}</p>
           </div>
         </Link>

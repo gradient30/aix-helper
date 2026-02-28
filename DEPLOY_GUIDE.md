@@ -26,6 +26,8 @@
    | ------------------------------- | ------------------------------------------ |
    | `VITE_SUPABASE_URL`             | `https://cllruxedtdvkljmggnxd.supabase.co` |
    | `VITE_SUPABASE_PUBLISHABLE_KEY` | `eyJhbGciOiJIUzI1NiIs...`                  |
+   | `VITE_AUTH_REDIRECT_URL`        | `https://aix-helper.pages.dev/auth?mode=reset`（可选，推荐） |
+   | `VITE_AUTH_REDIRECT_ORIGIN`     | `https://aix-helper.pages.dev`（可选）     |
 
    > 这两个是客户端公开变量（anon key），无需保密，但放入 GitHub Secrets 可避免明文出现在代码中。
 
@@ -73,6 +75,8 @@ var base = '/你的仓库名';   // ← 改为实际仓库名（不加结尾斜�
 | ------------------------------- | ---------------------- |
 | `VITE_SUPABASE_URL`             | 你的 Supabase URL      |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | 你的 Supabase anon key |
+| `VITE_AUTH_REDIRECT_URL`        | （可选）重置密码回跳完整 URL |
+| `VITE_AUTH_REDIRECT_ORIGIN`     | （可选）重置密码回跳域名 |
 
 ### 步骤 3 — 开启 GitHub Pages
 
@@ -158,6 +162,8 @@ command: pages deploy dist --project-name=aix-helper
 | `CLOUDFLARE_ACCOUNT_ID`         | 步骤 2 获取的 Account ID | Cloudflare  |
 | `VITE_SUPABASE_URL`             | 你的 Supabase URL        | 项目 `.env` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | 你的 Supabase anon key   | 项目 `.env` |
+| `VITE_AUTH_REDIRECT_URL`        | （可选）重置密码回跳完整 URL | 项目 Secrets |
+| `VITE_AUTH_REDIRECT_ORIGIN`     | （可选）重置密码回跳域名 | 项目 Secrets |
 
 ### 步骤 6 — 触发部署
 
@@ -260,6 +266,22 @@ command: pages deploy dist --project-name=aix-helper --commit-dirty=true
 ### Q: 登录后无法访问数据？
 
 说明 Supabase 环境变量未正确注入。检查 GitHub Secrets 中是否正确添加了 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_PUBLISHABLE_KEY`，值从项目 `.env` 文件中获取。
+
+### Q: 找回密码邮件链接跳到了 `*.lovable.app`，并报 `supabaseUrl is required`？
+
+这是 **Supabase Auth 回跳域名配置** 与当前部署域名不一致导致的。
+
+排查并修复：
+
+1. 在 Supabase 控制台设置：
+   - `Authentication -> URL Configuration -> Site URL` 改为你的线上域名（例如 `https://aix-helper.pages.dev`）
+   - `Additional Redirect URLs` 添加：
+     - `https://aix-helper.pages.dev/auth`
+     - `https://aix-helper.pages.dev/auth?mode=reset`
+2. 在 GitHub Secrets 设置（推荐）：
+   - `VITE_AUTH_REDIRECT_URL=https://aix-helper.pages.dev/auth?mode=reset`
+   - 或至少设置 `VITE_AUTH_REDIRECT_ORIGIN=https://aix-helper.pages.dev`
+3. 重新部署后再发送一次找回密码邮件（旧邮件链接不会自动更新）。
 
 ### Q: 如何只部署到其中一个平台？
 

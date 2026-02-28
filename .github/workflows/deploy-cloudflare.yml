@@ -31,6 +31,12 @@ jobs:
           VITE_BASE_URL: /
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          # 可选：显式指定找回密码回跳地址（优先级高于 ORIGIN）
+          VITE_AUTH_REDIRECT_URL: ${{ secrets.VITE_AUTH_REDIRECT_URL }}
+          # 可选：当未设置 URL 时，指定回跳域名
+          VITE_AUTH_REDIRECT_ORIGIN: ${{ secrets.VITE_AUTH_REDIRECT_ORIGIN }}
+          # 构建版本元数据：每次 commit 自动变化
+          VITE_COMMIT_SHA: ${{ github.sha }}
 
       - name: Verify Cloudflare secrets
         run: |

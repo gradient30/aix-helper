@@ -15,12 +15,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function resolveAuthRedirectOrigin(): string {
-  const configured = import.meta.env.VITE_AUTH_REDIRECT_ORIGIN?.trim();
-  if (configured) {
-    return configured.replace(/\/+$/, "");
-  }
-  return window.location.origin;
+function normalizeBasePath(basePath: string): string {
+  const trimmed = (basePath || "/").trim();
+  if (trimmed === "/" || trimmed === "") return "/";
+  return `/${trimmed.replace(/^\/+|\/+$/g, "")}/`;
+}
+
+function buildPasswordResetRedirectUrl(): string {
+  const explicitUrl = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();
+  if (explicitUrl) return explicitUrl;
+
+  const configuredOrigin = import.meta.env.VITE_AUTH_REDIRECT_ORIGIN?.trim();
+  const origin = (configuredOrigin || window.location.origin).replace(/\/+$/, "");
+  const basePath = normalizeBasePath(import.meta.env.VITE_BASE_URL || "/");
+  const authPath = basePath === "/" ? "/auth" : `${basePath}auth`;
+
+  return `${origin}${authPath}?mode=reset`;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -62,9 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const requestPasswordReset = async (email: string) => {
-    const redirectOrigin = resolveAuthRedirectOrigin();
+    const redirectTo = buildPasswordResetRedirectUrl();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${redirectOrigin}/auth?mode=reset`,
+      redirectTo,
     });
     return { error: error as Error | null };
   };

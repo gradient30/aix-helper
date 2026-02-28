@@ -15,7 +15,10 @@
     "verify:guides": "node --experimental-strip-types scripts/verify-guide-content.ts",
     "sync:ai-tech": "node --experimental-strip-types scripts/sync-ai-tech-top10.ts",
     "verify:ai-tech": "node --experimental-strip-types scripts/verify-ai-tech.ts",
-    "ci:gate": "npm run lint && npm run test && npm run verify:presets && npm run verify:guides && npm run verify:ai-tech"
+    "ci:gate": "npm run lint && npm run test && npm run verify:presets && npm run verify:guides && npm run verify:ai-tech",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
