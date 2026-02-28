@@ -53,6 +53,57 @@ function fail(input: Omit<CheckResult, "status">): CheckResult {
   return { ...input, status: "fail" };
 }
 
+function escapeAnnotationValue(value: string): string {
+  return value
+    .replace(/%/g, "%25")
+    .replace(/\r/g, "%0D")
+    .replace(/\n/g, "%0A");
+}
+
+function printFailedChecks(failed: CheckResult[]): void {
+  console.error("Failed checks (verify:ai-tech):");
+  failed.forEach((item, index) => {
+    console.error(`${index + 1}. [${item.scope}] ${item.id} - ${item.message}`);
+    if (item.evidence) {
+      console.error(`   evidence: ${JSON.stringify(item.evidence)}`);
+    }
+  });
+}
+
+function printAiTechFixHints(failed: CheckResult[]): void {
+  const hints = new Set<string>();
+
+  failed.forEach((item) => {
+    if (item.id.includes(":live_star_order")) {
+      hints.add("检测到星标顺序漂移：运行 npm run sync:ai-tech 并提交 top-repos.generated.ts。");
+    }
+    if (item.id === "github:token") {
+      hints.add("缺少 GitHub Token：在 CI 注入 GITHUB_TOKEN 或 GH_TOKEN，确保 strict 校验可访问 GitHub API。");
+    }
+    if (item.scope === "links" && item.id.startsWith("url:")) {
+      hints.add("文档链接不可达：检查 ai-tech catalog 里的 source_url，并更新到官方最新可访问地址。");
+    }
+    if (item.id.endsWith(":skill_md")) {
+      hints.add("skill_repos 缺少 SKILL.md：替换该仓库或调整同步筛选规则。");
+    }
+  });
+
+  if (!hints.size) return;
+
+  console.error("Suggested actions:");
+  [...hints].forEach((hint, index) => {
+    console.error(`${index + 1}. ${hint}`);
+  });
+}
+
+function emitGitHubAnnotations(failed: CheckResult[]): void {
+  failed.slice(0, 30).forEach((item) => {
+    const title = escapeAnnotationValue(`verify:ai-tech ${item.scope}`);
+    const message = escapeAnnotationValue(`${item.id} - ${item.message}`);
+    console.error(`::error title=${title}::${message}`);
+  });
+}
+
 function toDate(value: string): Date {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) throw new Error(`Invalid date: ${value}`);
@@ -480,9 +531,15 @@ async function main() {
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, JSON.stringify(report, null, 2), "utf8");
 
+  const failed = results.filter((item) => item.status === "fail");
+
   if (summary.fail > 0) {
     process.exitCode = 1;
     console.error(`ai-tech verification failed: ${summary.fail} checks failed`);
+    console.error(`AI-tech report path: ${outputPath}`);
+    printFailedChecks(failed);
+    printAiTechFixHints(failed);
+    emitGitHubAnnotations(failed);
   } else {
     console.log(`ai-tech verification passed: ${summary.pass}/${summary.total}`);
   }

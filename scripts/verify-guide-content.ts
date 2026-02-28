@@ -40,6 +40,54 @@ function fail(input: Omit<CheckResult, "status">): CheckResult {
   return { ...input, status: "fail" };
 }
 
+function escapeAnnotationValue(value: string): string {
+  return value
+    .replace(/%/g, "%25")
+    .replace(/\r/g, "%0D")
+    .replace(/\n/g, "%0A");
+}
+
+function printFailedChecks(failed: CheckResult[]): void {
+  console.error("Failed checks (verify:guides):");
+  failed.forEach((item, index) => {
+    console.error(`${index + 1}. [${item.scope}] ${item.id} - ${item.message}`);
+    if (item.evidence) {
+      console.error(`   evidence: ${JSON.stringify(item.evidence)}`);
+    }
+  });
+}
+
+function printGuideFixHints(failed: CheckResult[]): void {
+  const hints = new Set<string>();
+
+  failed.forEach((item) => {
+    if (item.scope === "links" && item.id.startsWith("url:")) {
+      hints.add("检查 docs-catalog 中对应 source_url 是否已变更，更新为官方最新可访问链接。");
+    }
+    if (item.scope === "content") {
+      hints.add("检查 SkillsGuide/SetupGuide 是否引入了被禁用的旧命令或高漂移文案。");
+    }
+    if (item.scope === "i18n") {
+      hints.add("同步 zh/en locale 键集合，确保 help* 子键完全一致。");
+    }
+  });
+
+  if (!hints.size) return;
+
+  console.error("Suggested actions:");
+  [...hints].forEach((hint, index) => {
+    console.error(`${index + 1}. ${hint}`);
+  });
+}
+
+function emitGitHubAnnotations(failed: CheckResult[]): void {
+  failed.slice(0, 30).forEach((item) => {
+    const title = escapeAnnotationValue(`verify:guides ${item.scope}`);
+    const message = escapeAnnotationValue(`${item.id} - ${item.message}`);
+    console.error(`::error title=${title}::${message}`);
+  });
+}
+
 async function fetchWithTimeout(url: string, method: "HEAD" | "GET" = "HEAD", timeoutMs = 8_000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -255,9 +303,15 @@ async function main() {
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, JSON.stringify(report, null, 2), "utf8");
 
+  const failed = results.filter((item) => item.status === "fail");
+
   if (summary.fail > 0) {
     process.exitCode = 1;
     console.error(`guide verification failed: ${summary.fail} checks failed`);
+    console.error(`Guide report path: ${outputPath}`);
+    printFailedChecks(failed);
+    printGuideFixHints(failed);
+    emitGitHubAnnotations(failed);
   } else {
     console.log(`guide verification passed: ${summary.pass}/${summary.total}`);
   }

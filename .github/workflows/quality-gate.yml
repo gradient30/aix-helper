@@ -32,6 +32,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run ci:gate
 
+      - name: Print quality gate report summary
+        if: always()
+        run: node --experimental-strip-types scripts/quality-gate-summary.ts
+
       - name: Upload preset verification report
         if: always()
         uses: actions/upload-artifact@v4
