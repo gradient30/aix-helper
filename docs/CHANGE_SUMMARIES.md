@@ -1218,3 +1218,139 @@
 
 ### 时间线
 - 2026-02-26T18:08:54+08:00 `create` progress | commit 9151a6b [状态:已完成, 进度:100%] (source: commit-9151a6b9a4738ce365240e490c8074fb0e854548)
+
+## REQ-0062 feat(auth): 新增记住邮箱与邮箱找回密码流程
+- 类型: requirement
+- 首次记录: 2026-02-28T09:40:19+08:00
+- 等级: P2
+- 状态: 已完成
+- 进度: 100%
+- 组件: src
+- 描述: feature | commit 0d798c6
+- 影响: 无
+- 根因: 待补充
+- 处理: feature | commit 0d798c6
+- 验证（测试/手工）: 待补充
+- 来源: commit-0d798c68b0fb823122d901feb5c430064ecefc9d
+
+### 时间线
+- 2026-02-28T09:40:19+08:00 `create` feature | commit 0d798c6 [状态:已完成, 进度:100%] (source: commit-0d798c68b0fb823122d901feb5c430064ecefc9d)
+
+## BUG-0003 fix(deploy): 修复 Cloudflare 刷新路由无限重定向
+- 类型: bug
+- 首次记录: 2026-02-28T10:18:28+08:00
+- 等级: P1
+- 状态: 已修复
+- 进度: 100%
+- 组件: public
+- 描述: bug | commit fa9cf0d
+- 影响: 无
+- 根因: 待补充
+- 处理: bug | commit fa9cf0d
+- 验证（测试/手工）: 待补充
+- 来源: commit-fa9cf0d3a0e46dde62c64844e162f60d32935acf
+
+### 时间线
+- 2026-02-28T10:18:28+08:00 `create` bug | commit fa9cf0d [状态:已修复, 进度:100%] (source: commit-fa9cf0d3a0e46dde62c64844e162f60d32935acf)
+
+## BUG-0004 fix(guides): 修复 Gemini 文档链接以通过校验
+- 类型: bug
+- 首次记录: 2026-02-28T10:42:20+08:00
+- 等级: P1
+- 状态: 已修复
+- 进度: 100%
+- 组件: src
+- 描述: bug | commit 5d1d34d
+- 影响: 无
+- 根因: 待补充
+- 处理: bug | commit 5d1d34d
+- 验证（测试/手工）: 待补充
+- 来源: commit-5d1d34d7e946a9c80f34864f658d97e47f462ede
+
+### 时间线
+- 2026-02-28T10:42:20+08:00 `create` bug | commit 5d1d34d [状态:已修复, 进度:100%] (source: commit-5d1d34d7e946a9c80f34864f658d97e47f462ede)
+
+## BUG-0005 fix(ai-tech): 同步 Top10 快照修复星标顺序漂移
+- 类型: bug
+- 首次记录: 2026-02-28T11:16:29+08:00
+- 等级: P1
+- 状态: 已修复
+- 进度: 100%
+- 组件: src
+- 描述: bug | commit cf4f498
+- 影响: 无
+- 根因: 待补充
+- 处理: bug | commit cf4f498
+- 验证（测试/手工）: 待补充
+- 来源: commit-cf4f4986d3f7236adb24518942008f8e8938a3e1
+
+### 时间线
+- 2026-02-28T11:16:29+08:00 `create` bug | commit cf4f498 [状态:已修复, 进度:100%] (source: commit-cf4f4986d3f7236adb24518942008f8e8938a3e1)
+
+## BUG-0006 ci(quality-gate): 增强失败日志与汇总定位输出
+- 类型: bug
+- 首次记录: 2026-02-28T13:25:13+08:00
+- 等级: P1
+- 状态: 已修复
+- 进度: 100%
+- 组件: scripts
+- 描述: bug | commit 3c577a9
+- 影响: 无
+- 根因: 待补充
+- 处理: bug | commit 3c577a9
+- 验证（测试/手工）: 待补充
+- 来源: commit-3c577a9dfd49c503dc5b3521c1bf798ddbb2cb3e
+
+### 时间线
+- 2026-02-28T13:25:13+08:00 `create` bug | commit 3c577a9 [状态:已修复, 进度:100%] (source: commit-3c577a9dfd49c503dc5b3521c1bf798ddbb2cb3e)
+
+## BUG-0007 fix(auth): 修复找回密码回跳无法进入重置界面
+- 类型: bug
+- 首次记录: 2026-02-28T14:07:27+08:00
+- 等级: P1
+- 状态: 已修复
+- 进度: 100%
+- 组件: src
+- 描述: bug | commit 7fed3ee
+- 影响: 无
+- 根因: 待补充
+- 处理: bug | commit 7fed3ee
+- 验证（测试/手工）: 待补充
+- 来源: commit-7fed3ee0f37a008c48a9f9cfe7bb62a32f0cce12
+
+### 时间线
+- 2026-02-28T14:07:27+08:00 `create` bug | commit 7fed3ee [状态:已修复, 进度:100%] (source: commit-7fed3ee0f37a008c48a9f9cfe7bb62a32f0cce12)
+
+## REQ-0063 feat(app): 新增版本标识并完善找回密码回跳配置
+- 类型: requirement
+- 首次记录: 2026-02-28T15:02:38+08:00
+- 等级: P2
+- 状态: 已完成
+- 进度: 100%
+- 组件: src
+- 描述: feature | commit bfbc225
+- 影响: 无
+- 根因: 待补充
+- 处理: feature | commit bfbc225
+- 验证（测试/手工）: 待补充
+- 来源: commit-bfbc22599848b0ab5ec6a4dc033e97ca030a8e4e
+
+### 时间线
+- 2026-02-28T15:02:38+08:00 `create` feature | commit bfbc225 [状态:已完成, 进度:100%] (source: commit-bfbc22599848b0ab5ec6a4dc033e97ca030a8e4e)
+
+## OPT-0004 chore(sync): 优化 tcloud 同步脚本并升级版本号
+- 类型: optimization
+- 首次记录: 2026-02-28T15:05:33+08:00
+- 等级: P3
+- 状态: 已优化
+- 进度: 100%
+- 组件: git-sync-to-tcloud.sh
+- 描述: optimization | commit 6fe5530
+- 影响: 无
+- 根因: 待补充
+- 处理: optimization | commit 6fe5530
+- 验证（测试/手工）: 待补充
+- 来源: commit-6fe5530dbd101698789a5fae4df44b90e6479565
+
+### 时间线
+- 2026-02-28T15:05:33+08:00 `create` optimization | commit 6fe5530 [状态:已优化, 进度:100%] (source: commit-6fe5530dbd101698789a5fae4df44b90e6479565)

@@ -37,6 +37,20 @@ import { parseImportData } from "@/lib/import-utils";
 
 type ExportingTarget = AppType | "backup" | null;
 
+function buildRepoSignature(
+  owner: string,
+  repo: string,
+  branch?: string | null,
+  subdirectory?: string | null,
+): string {
+  return [
+    owner.trim().toLowerCase(),
+    repo.trim().toLowerCase(),
+    (branch || "main").trim().toLowerCase(),
+    (subdirectory || "").trim().toLowerCase(),
+  ].join("::");
+}
+
 // ─── component ───────────────────────────────────────────────────────────────
 
 export default function Export() {
@@ -310,17 +324,20 @@ export default function Export() {
       const cleanPrompts = prompts.map((prompt) =>
         stripDbFields(prompt, ["id", "user_id", "created_at", "updated_at"] as const),
       );
-      const cleanSkills = skills.map((skill) =>
-        stripDbFields(skill, [
-          "id",
-          "user_id",
-          "created_at",
-          "updated_at",
-          "repo_id",
-        ] as const),
-      );
+      const repoById = new Map(skillsRepos.map((repo) => [repo.id, repo]));
+      const cleanSkills = skills.map((skill) => {
+        const repo = repoById.get(skill.repo_id);
+        return {
+          ...stripDbFields(skill, ["id", "user_id", "created_at", "updated_at"] as const),
+          repo_owner: repo?.owner || null,
+          repo_name: repo?.repo || null,
+          repo_branch: repo?.branch || null,
+          repo_subdirectory: repo?.subdirectory || null,
+          repo_is_default: repo?.is_default || false,
+        };
+      });
       const cleanRepos = skillsRepos.map((repo) =>
-        stripDbFields(repo, ["id", "user_id", "created_at", "updated_at"] as const),
+        stripDbFields(repo, ["user_id", "created_at", "updated_at"] as const),
       );
 
       zip.file("providers.json", JSON.stringify(cleanProviders, null, 2));
@@ -363,6 +380,23 @@ export default function Export() {
     } else if (module === "mcp-servers") {
       clean = (data as McpServer[]).map((server) =>
         sanitizeMcpForBackup(server, includeSecrets),
+      );
+    } else if (module === "skills") {
+      const repoById = new Map(skillsRepos.map((repo) => [repo.id, repo]));
+      clean = (data as Skill[]).map((skill) => {
+        const repo = repoById.get(skill.repo_id);
+        return {
+          ...stripDbFields(skill, ["id", "user_id", "created_at", "updated_at"] as const),
+          repo_owner: repo?.owner || null,
+          repo_name: repo?.repo || null,
+          repo_branch: repo?.branch || null,
+          repo_subdirectory: repo?.subdirectory || null,
+          repo_is_default: repo?.is_default || false,
+        };
+      });
+    } else if (module === "skills-repos") {
+      clean = (data as SkillsRepo[]).map((repo) =>
+        stripDbFields(repo, ["user_id", "created_at", "updated_at"] as const),
       );
     } else {
       clean = data.map((item) =>
@@ -409,6 +443,122 @@ export default function Export() {
             .from("prompts")
             .insert({ ...item, user_id: user!.id });
           if (!error) count++;
+        }
+      } else if (parsed.module === "skills_repos") {
+        const { data: existingRepos, error: existingReposError } = await supabase
+          .from("skills_repos")
+          .select("id, owner, repo, branch, subdirectory")
+          .eq("user_id", user!.id);
+        if (existingReposError) throw existingReposError;
+
+        const knownRepoKeys = new Set(
+          (existingRepos || []).map((repo) =>
+            buildRepoSignature(repo.owner, repo.repo, repo.branch, repo.subdirectory),
+          ),
+        );
+
+        for (const item of parsed.items) {
+          const repoKey = buildRepoSignature(
+            item.owner,
+            item.repo,
+            item.branch,
+            item.subdirectory,
+          );
+          if (knownRepoKeys.has(repoKey)) continue;
+
+          const { error } = await supabase
+            .from("skills_repos")
+            .insert({ ...item, user_id: user!.id });
+          if (!error) {
+            knownRepoKeys.add(repoKey);
+            count++;
+          }
+        }
+      } else if (parsed.module === "skills") {
+        const { data: existingRepos, error: existingReposError } = await supabase
+          .from("skills_repos")
+          .select("id, owner, repo, branch, subdirectory")
+          .eq("user_id", user!.id);
+        if (existingReposError) throw existingReposError;
+
+        const reposById = new Map((existingRepos || []).map((repo) => [repo.id, repo]));
+        const reposByKey = new Map(
+          (existingRepos || []).map((repo) => [
+            buildRepoSignature(repo.owner, repo.repo, repo.branch, repo.subdirectory),
+            repo,
+          ]),
+        );
+
+        const { data: existingSkills, error: existingSkillsError } = await supabase
+          .from("skills")
+          .select("name, repo_id")
+          .eq("user_id", user!.id);
+        if (existingSkillsError) throw existingSkillsError;
+
+        const knownSkills = new Set(
+          (existingSkills || []).map(
+            (skill) => `${skill.repo_id}::${skill.name.trim().toLowerCase()}`,
+          ),
+        );
+
+        for (const item of parsed.items) {
+          let repoId =
+            item.repo_id && reposById.has(item.repo_id) ? item.repo_id : null;
+
+          if (
+            !repoId &&
+            item.repo_owner &&
+            item.repo_name
+          ) {
+            const repoKey = buildRepoSignature(
+              item.repo_owner,
+              item.repo_name,
+              item.repo_branch,
+              item.repo_subdirectory,
+            );
+            let matchedRepo = reposByKey.get(repoKey);
+
+            if (!matchedRepo) {
+              const { data: createdRepo, error: createRepoError } = await supabase
+                .from("skills_repos")
+                .insert({
+                  user_id: user!.id,
+                  owner: item.repo_owner,
+                  repo: item.repo_name,
+                  branch: item.repo_branch || "main",
+                  subdirectory: item.repo_subdirectory || "",
+                  is_default: item.repo_is_default ?? false,
+                })
+                .select("id, owner, repo, branch, subdirectory")
+                .single();
+
+              if (createRepoError) continue;
+              matchedRepo = createdRepo;
+              reposById.set(createdRepo.id, createdRepo);
+              reposByKey.set(repoKey, createdRepo);
+            }
+
+            repoId = matchedRepo.id;
+          }
+
+          if (!repoId) continue;
+
+          const skillKey = `${repoId}::${item.name.trim().toLowerCase()}`;
+          if (knownSkills.has(skillKey)) continue;
+
+          const { error } = await supabase
+            .from("skills")
+            .insert({
+              user_id: user!.id,
+              name: item.name,
+              description: item.description,
+              installed: item.installed,
+              repo_id: repoId,
+            });
+          if (!error) {
+            knownSkills.add(skillKey);
+            count++;
+          }
         }
       }
 

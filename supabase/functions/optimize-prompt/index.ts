@@ -22,6 +22,18 @@ function getCorsHeaders(req: Request) {
   };
 }
 
+function getAiGatewayConfig() {
+  const apiUrl = (Deno.env.get("AI_GATEWAY_API_URL") || "https://api.openai.com/v1/chat/completions").trim();
+  const apiKey = (Deno.env.get("AI_GATEWAY_API_KEY") || "").trim();
+  const model = (Deno.env.get("AI_MODEL") || "gpt-4o-mini").trim();
+
+  if (!apiKey) {
+    throw new Error("AI_GATEWAY_API_KEY not configured");
+  }
+
+  return { apiUrl, apiKey, model };
+}
+
 // ========== Optimization Templates (based on prompt-optimizer) ==========
 
 const TEMPLATES: Record<string, { system: string; userTemplate: string }> = {
@@ -263,22 +275,15 @@ serve(async (req) => {
       feedback,
     });
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const { apiUrl, apiKey, model } = getAiGatewayConfig();
+    const aiResponse = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages,
         stream: false,
       }),

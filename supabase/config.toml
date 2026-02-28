@@ -1,4 +1,4 @@
-project_id = "cllruxedtdvkljmggnxd"
+project_id = "REPLACE_WITH_YOUR_SUPABASE_PROJECT_REF"
 
 [functions.test-connection]
 verify_jwt = true

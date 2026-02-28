@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "next_ids": {
-    "BUG": 3,
-    "REQ": 62,
-    "OPT": 4
+    "BUG": 8,
+    "REQ": 64,
+    "OPT": 5
   },
   "by_fingerprint": {
     "5b43b48399c887d2dd739752fafd23eb4ec33d04": {
@@ -401,6 +401,54 @@
       "event_type": "requirement",
       "title": "Update VERIFIED_AT date and source URLs in mcp.ts",
       "component": "src"
+    },
+    "9026e679c9f4d16824dcf33a4c5e70ab464c33e9": {
+      "entry_id": "REQ-0062",
+      "event_type": "requirement",
+      "title": "feat(auth): 新增记住邮箱与邮箱找回密码流程",
+      "component": "src"
+    },
+    "25bb02a4875d0d1f5d3621126e248d90eb145bf1": {
+      "entry_id": "BUG-0003",
+      "event_type": "bug",
+      "title": "fix(deploy): 修复 Cloudflare 刷新路由无限重定向",
+      "component": "public"
+    },
+    "ad789ea58ce10cde57a5f33e3b4c8daf5296ba1d": {
+      "entry_id": "BUG-0004",
+      "event_type": "bug",
+      "title": "fix(guides): 修复 Gemini 文档链接以通过校验",
+      "component": "src"
+    },
+    "ebb1282dd679f0e53082030fff8944986cdc2c72": {
+      "entry_id": "BUG-0005",
+      "event_type": "bug",
+      "title": "fix(ai-tech): 同步 Top10 快照修复星标顺序漂移",
+      "component": "src"
+    },
+    "c1d983932bb859e18ac9d7ad2bc6dee5fc8ef91a": {
+      "entry_id": "BUG-0006",
+      "event_type": "bug",
+      "title": "ci(quality-gate): 增强失败日志与汇总定位输出",
+      "component": "scripts"
+    },
+    "671bce28235de2652c92ff74cf8980e235da464e": {
+      "entry_id": "BUG-0007",
+      "event_type": "bug",
+      "title": "fix(auth): 修复找回密码回跳无法进入重置界面",
+      "component": "src"
+    },
+    "3913a5f7438737a71500809ecce2f5a3ff55c070": {
+      "entry_id": "REQ-0063",
+      "event_type": "requirement",
+      "title": "feat(app): 新增版本标识并完善找回密码回跳配置",
+      "component": "src"
+    },
+    "a36889778a826abb755b87c6a87f443669928f34": {
+      "entry_id": "OPT-0004",
+      "event_type": "optimization",
+      "title": "chore(sync): 优化 tcloud 同步脚本并升级版本号",
+      "component": "git-sync-to-tcloud.sh"
     }
   },
   "processed_source_ids": {
@@ -516,6 +564,14 @@
     "commit-cb7cdacfb575e5149c6c86e8384a80e7e46e66c1": "2026-02-25T23:23:34+08:00",
     "commit-ecc2d61b920c26ab864ed9b6d53da03cfab2071d": "2026-02-25T23:24:50+08:00",
     "commit-be8aed96b911b18a61e4ea9a0a5b92f99b38ca56": "2026-02-26T18:06:17+08:00",
-    "commit-9151a6b9a4738ce365240e490c8074fb0e854548": "2026-02-26T18:08:54+08:00"
+    "commit-9151a6b9a4738ce365240e490c8074fb0e854548": "2026-02-26T18:08:54+08:00",
+    "commit-0d798c68b0fb823122d901feb5c430064ecefc9d": "2026-02-28T09:40:19+08:00",
+    "commit-fa9cf0d3a0e46dde62c64844e162f60d32935acf": "2026-02-28T10:18:28+08:00",
+    "commit-5d1d34d7e946a9c80f34864f658d97e47f462ede": "2026-02-28T10:42:20+08:00",
+    "commit-cf4f4986d3f7236adb24518942008f8e8938a3e1": "2026-02-28T11:16:29+08:00",
+    "commit-3c577a9dfd49c503dc5b3521c1bf798ddbb2cb3e": "2026-02-28T13:25:13+08:00",
+    "commit-7fed3ee0f37a008c48a9f9cfe7bb62a32f0cce12": "2026-02-28T14:07:27+08:00",
+    "commit-bfbc22599848b0ab5ec6a4dc033e97ca030a8e4e": "2026-02-28T15:02:38+08:00",
+    "commit-6fe5530dbd101698789a5fae4df44b90e6479565": "2026-02-28T15:05:33+08:00"
   }
 }

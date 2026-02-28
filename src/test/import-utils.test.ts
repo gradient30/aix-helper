@@ -64,6 +64,59 @@ describe("import-utils", () => {
     });
   });
 
+  it("parseImportData should parse skills_repos module", () => {
+    const parsed = parseImportData([
+      {
+        id: "repo-id-1",
+        owner: "admin",
+        repo: "skills-repo",
+        branch: "main",
+        subdirectory: "skills",
+        is_default: true,
+      },
+    ]);
+
+    expect(parsed.module).toBe("skills_repos");
+    if (parsed.module !== "skills_repos") return;
+    expect(parsed.items[0]).toMatchObject({
+      id: "repo-id-1",
+      owner: "admin",
+      repo: "skills-repo",
+      branch: "main",
+      subdirectory: "skills",
+      is_default: true,
+    });
+  });
+
+  it("parseImportData should parse skills module", () => {
+    const parsed = parseImportData([
+      {
+        name: "git-commit",
+        description: "commit helper",
+        installed: true,
+        repo_id: "repo-id-1",
+        repo_owner: "admin",
+        repo_name: "skills-repo",
+        repo_branch: "main",
+        repo_subdirectory: "skills",
+      },
+    ]);
+
+    expect(parsed.module).toBe("skills");
+    if (parsed.module !== "skills") return;
+    expect(parsed.items[0]).toMatchObject({
+      name: "git-commit",
+      description: "commit helper",
+      installed: true,
+      repo_id: "repo-id-1",
+      repo_owner: "admin",
+      repo_name: "skills-repo",
+      repo_branch: "main",
+      repo_subdirectory: "skills",
+      repo_is_default: false,
+    });
+  });
+
   it("parseImportData should reject invalid payload", () => {
     expect(() => parseImportData({ foo: "bar" })).toThrow("必须是数组");
     expect(() => parseImportData([])).toThrow("空数据");

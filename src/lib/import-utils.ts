@@ -3,13 +3,29 @@ import type { Json, TablesInsert } from "@/integrations/supabase/types";
 export type ProviderImportItem = Omit<TablesInsert<"providers">, "user_id">;
 export type McpImportItem = Omit<TablesInsert<"mcp_servers">, "user_id">;
 export type PromptImportItem = Omit<TablesInsert<"prompts">, "user_id">;
+export type SkillsRepoImportItem = Omit<TablesInsert<"skills_repos">, "user_id">;
+export type SkillImportItem = Omit<TablesInsert<"skills">, "user_id" | "repo_id"> & {
+  repo_id?: string | null;
+  repo_owner?: string | null;
+  repo_name?: string | null;
+  repo_branch?: string | null;
+  repo_subdirectory?: string | null;
+  repo_is_default?: boolean;
+};
 
-export type ImportModule = "providers" | "mcp_servers" | "prompts";
+export type ImportModule =
+  | "providers"
+  | "mcp_servers"
+  | "prompts"
+  | "skills"
+  | "skills_repos";
 
 export type ParsedImportData =
   | { module: "providers"; items: ProviderImportItem[] }
   | { module: "mcp_servers"; items: McpImportItem[] }
-  | { module: "prompts"; items: PromptImportItem[] };
+  | { module: "prompts"; items: PromptImportItem[] }
+  | { module: "skills"; items: SkillImportItem[] }
+  | { module: "skills_repos"; items: SkillsRepoImportItem[] };
 
 export type DeepLinkProviderItem = Pick<
   ProviderImportItem,
@@ -146,6 +162,74 @@ function parsePromptItem(raw: unknown): PromptImportItem | null {
   };
 }
 
+function parseSkillsRepoItem(raw: unknown): SkillsRepoImportItem | null {
+  if (
+    !isPlainObject(raw) ||
+    typeof raw.owner !== "string" ||
+    !raw.owner.trim() ||
+    typeof raw.repo !== "string" ||
+    !raw.repo.trim()
+  ) {
+    return null;
+  }
+
+  const branch =
+    typeof raw.branch === "string" && raw.branch.trim()
+      ? raw.branch.slice(0, 100)
+      : "main";
+  const subdirectory = toNullableString(raw.subdirectory);
+
+  const item: SkillsRepoImportItem = {
+    owner: raw.owner.trim().slice(0, MAX_NAME_LENGTH),
+    repo: raw.repo.trim().slice(0, MAX_NAME_LENGTH),
+    branch,
+    subdirectory:
+      typeof subdirectory === "string"
+        ? subdirectory.slice(0, MAX_URL_LENGTH)
+        : subdirectory,
+    is_default: toBoolean(raw.is_default, false),
+  };
+
+  if (typeof raw.id === "string" && raw.id.trim()) {
+    item.id = raw.id.trim();
+  }
+
+  return item;
+}
+
+function parseSkillItem(raw: unknown): SkillImportItem | null {
+  if (!isPlainObject(raw) || typeof raw.name !== "string" || !raw.name.trim()) {
+    return null;
+  }
+
+  const repoId = toNullableString(raw.repo_id);
+  const repoOwner = toNullableString(raw.repo_owner);
+  const repoName = toNullableString(raw.repo_name);
+  const repoBranch = toNullableString(raw.repo_branch);
+  const repoSubdirectory = toNullableString(raw.repo_subdirectory);
+
+  return {
+    name: raw.name.trim().slice(0, MAX_NAME_LENGTH),
+    description:
+      typeof raw.description === "string"
+        ? raw.description.slice(0, MAX_TEXT_LENGTH)
+        : null,
+    installed: toBoolean(raw.installed, false),
+    repo_id: typeof repoId === "string" ? repoId.trim() : repoId,
+    repo_owner:
+      typeof repoOwner === "string" ? repoOwner.trim().slice(0, MAX_NAME_LENGTH) : repoOwner,
+    repo_name:
+      typeof repoName === "string" ? repoName.trim().slice(0, MAX_NAME_LENGTH) : repoName,
+    repo_branch:
+      typeof repoBranch === "string" ? repoBranch.trim().slice(0, 100) : repoBranch,
+    repo_subdirectory:
+      typeof repoSubdirectory === "string"
+        ? repoSubdirectory.trim().slice(0, MAX_URL_LENGTH)
+        : repoSubdirectory,
+    repo_is_default: toBoolean(raw.repo_is_default, false),
+  };
+}
+
 export function parseImportData(value: unknown): ParsedImportData {
   if (!Array.isArray(value)) {
     throw new Error("导入文件格式错误：必须是数组");
@@ -181,6 +265,20 @@ export function parseImportData(value: unknown): ParsedImportData {
       .map((item) => parsePromptItem(item))
       .filter((item): item is PromptImportItem => item !== null);
     return { module: "prompts", items };
+  }
+
+  if ("owner" in sample && "repo" in sample) {
+    const items = value
+      .map((item) => parseSkillsRepoItem(item))
+      .filter((item): item is SkillsRepoImportItem => item !== null);
+    return { module: "skills_repos", items };
+  }
+
+  if ("installed" in sample && ("repo_id" in sample || "repo_owner" in sample || "repo_name" in sample)) {
+    const items = value
+      .map((item) => parseSkillItem(item))
+      .filter((item): item is SkillImportItem => item !== null);
+    return { module: "skills", items };
   }
 
   throw new Error("不支持的导入类型");

@@ -13,6 +13,7 @@
     "commit-09c961a556f90fb7b612f141e1df9a505adae2fd",
     "commit-0a74f791c51b8c03c0ad865385ae6f034702fa78",
     "commit-0ba6d60514a118e9cc496b225bf72a6b29d33345",
+    "commit-0d798c68b0fb823122d901feb5c430064ecefc9d",
     "commit-0f8b8e211f75536f60e8764aa253895707ad5829",
     "commit-0f9f791ef59c93bfeed9b5e663f4da943da6380e",
     "commit-143ea4bda71db20612b3a17585c1d7773d23fe46",
@@ -32,6 +33,7 @@
     "commit-341d83af7e4b590fd3600a78ebdef7c159902f7e",
     "commit-37f2b3cb36b6a0713843d4df2d799293aa67a872",
     "commit-38d277b497def141c7281440e0c1fb6a1db8ecf0",
+    "commit-3c577a9dfd49c503dc5b3521c1bf798ddbb2cb3e",
     "commit-3e81678e37ab9d084aef9e93f5252c3e3bfdb6f5",
     "commit-43acefe60b49802b8201efd62c4d03582d51528d",
     "commit-4442c824d1c01693f61a3acb5acf5efc98bdce0f",
@@ -39,6 +41,7 @@
     "commit-52dcdc4fdbf9cd4fbea9dc5a5a079a0ad1276953",
     "commit-530547fbba09afd73374e9b36998c850a5a1d399",
     "commit-5bacb3dcc4e063021198e6df103510331d959967",
+    "commit-5d1d34d7e946a9c80f34864f658d97e47f462ede",
     "commit-5dd10a998ca84b8c22b2828f7755e112fbb535b7",
     "commit-5f5c47e1497ff526cd77ed303c7004f22ebff977",
     "commit-5f70ac720d239b482117764ded56b94d6e21ccac",
@@ -56,11 +59,13 @@
     "commit-692e135dbfba17efeeb26f245486d4981b39f2fe",
     "commit-6de7e0c3ba467efee74fa37b89566e549f5483ba",
     "commit-6e68459626f8adafbc04abf84b2a9df555dfb91e",
+    "commit-6fe5530dbd101698789a5fae4df44b90e6479565",
     "commit-71219326b204cd178432bbc023264c647293f1e8",
     "commit-72147c36b895911d7d47426034d73c3bab83c3b8",
     "commit-74fb238fc90e29f0aa0ce80e9b1b79d302cfca4d",
     "commit-7add4d03836f0c3d42e52ef33ec6bec82d3ddd98",
     "commit-7d188de61d6f743f9a77142782ebf19bde80cacb",
+    "commit-7fed3ee0f37a008c48a9f9cfe7bb62a32f0cce12",
     "commit-8044f9793f6f16d9abea916f05b68d9972b2e87e",
     "commit-80dadd74fdd1200b96240383ad894541d5126572",
     "commit-81b0a5e56f4ee7a03595abb00e15b950d77f1873",
@@ -87,11 +92,13 @@
     "commit-bb8157e4b37c430a3463408b05ea42666953da99",
     "commit-bc22b82835940f7711be890bb7a13e733e6a8e7e",
     "commit-be8aed96b911b18a61e4ea9a0a5b92f99b38ca56",
+    "commit-bfbc22599848b0ab5ec6a4dc033e97ca030a8e4e",
     "commit-bfca156ec9b7d1ded4fd13d4566677c4f31404e1",
     "commit-c398280437a6134da2a0d79beae56c21e08a53ac",
     "commit-c4b32e11a9609d5a7c215456beb45b2884965e27",
     "commit-c92a931c51c2cbe5851e2d1672c4ff51f4994014",
     "commit-cb7cdacfb575e5149c6c86e8384a80e7e46e66c1",
+    "commit-cf4f4986d3f7236adb24518942008f8e8938a3e1",
     "commit-d1f6271608d5ad02eb275f14ad7e722a64bebb9b",
     "commit-d326b1f63b32996b98922aebf7100c88e1ff6331",
     "commit-d60f1913eab66954dab334645b7249b9ed9bc0e0",
@@ -111,12 +118,13 @@
     "commit-f4d17d0e76eaf855916a4cd1f09c2feb120d35ec",
     "commit-f59fcd95f6765007a8c895c347278175e3184528",
     "commit-f89d4e60b65d21cdbeca0a283a5a008198a49294",
+    "commit-fa9cf0d3a0e46dde62c64844e162f60d32935acf",
     "commit-fc759690e816a2665d35cfec0c721d170406d296",
     "commit-ff5166e94f9fa3cca1ebbf2fd15b3871b98baf0a",
     "commit-ff8578812d78b79c69ae2a36e45a0c77bfd21c2d"
   ],
   "next_sequence": {
-    "PROG": 73
+    "PROG": 81
   },
   "days": {
     "2026-02-27": {
@@ -1213,6 +1221,129 @@
       "next_steps": [],
       "meta": {
         "created_at": "2026-02-27T18:19:51+08:00"
+      }
+    },
+    "2026-02-28": {
+      "plans": [],
+      "progress_updates": [
+        {
+          "item_id": "PROG-0073",
+          "fingerprint": "f6f44d831319be38af7204466b3450eb4ed4de1e",
+          "title": "feat(auth): 新增记住邮箱与邮箱找回密码流程",
+          "detail": "feature | commit 0d798c6",
+          "status": "done",
+          "progress": "100%",
+          "priority": "P2",
+          "owner": "gradient30",
+          "component": "src",
+          "due_date": "",
+          "updated_at": "2026-02-28T09:40:19+08:00",
+          "source_id": "commit-0d798c68b0fb823122d901feb5c430064ecefc9d"
+        },
+        {
+          "item_id": "PROG-0074",
+          "fingerprint": "abd9cca40fbf7705dcfbe3e6f061d1a777fa66f6",
+          "title": "fix(deploy): 修复 Cloudflare 刷新路由无限重定向",
+          "detail": "bug | commit fa9cf0d",
+          "status": "done",
+          "progress": "100%",
+          "priority": "P1",
+          "owner": "gradient30",
+          "component": "public",
+          "due_date": "",
+          "updated_at": "2026-02-28T10:18:28+08:00",
+          "source_id": "commit-fa9cf0d3a0e46dde62c64844e162f60d32935acf"
+        },
+        {
+          "item_id": "PROG-0075",
+          "fingerprint": "d94bd9a846230d264e2489257c00d29b76f7cc0a",
+          "title": "fix(guides): 修复 Gemini 文档链接以通过校验",
+          "detail": "bug | commit 5d1d34d",
+          "status": "done",
+          "progress": "100%",
+          "priority": "P1",
+          "owner": "gradient30",
+          "component": "src",
+          "due_date": "",
+          "updated_at": "2026-02-28T10:42:20+08:00",
+          "source_id": "commit-5d1d34d7e946a9c80f34864f658d97e47f462ede"
+        },
+        {
+          "item_id": "PROG-0076",
+          "fingerprint": "6b5e9df982f3312df951896ce76ba67468328910",
+          "title": "fix(ai-tech): 同步 Top10 快照修复星标顺序漂移",
+          "detail": "bug | commit cf4f498",
+          "status": "done",
+          "progress": "100%",
+          "priority": "P1",
+          "owner": "gradient30",
+          "component": "src",
+          "due_date": "",
+          "updated_at": "2026-02-28T11:16:29+08:00",
+          "source_id": "commit-cf4f4986d3f7236adb24518942008f8e8938a3e1"
+        },
+        {
+          "item_id": "PROG-0077",
+          "fingerprint": "f6d3b878a73c9ec8b6ac8fe90ed54c2688648382",
+          "title": "ci(quality-gate): 增强失败日志与汇总定位输出",
+          "detail": "bug | commit 3c577a9",
+          "status": "done",
+          "progress": "100%",
+          "priority": "P1",
+          "owner": "gradient30",
+          "component": "scripts",
+          "due_date": "",
+          "updated_at": "2026-02-28T13:25:13+08:00",
+          "source_id": "commit-3c577a9dfd49c503dc5b3521c1bf798ddbb2cb3e"
+        },
+        {
+          "item_id": "PROG-0078",
+          "fingerprint": "3f81d1c5b186c772fb8753a45602dfdd21ed5e15",
+          "title": "fix(auth): 修复找回密码回跳无法进入重置界面",
+          "detail": "bug | commit 7fed3ee",
+          "status": "done",
+          "progress": "100%",
+          "priority": "P1",
+          "owner": "gradient30",
+          "component": "src",
+          "due_date": "",
+          "updated_at": "2026-02-28T14:07:27+08:00",
+          "source_id": "commit-7fed3ee0f37a008c48a9f9cfe7bb62a32f0cce12"
+        },
+        {
+          "item_id": "PROG-0079",
+          "fingerprint": "b3563d6b8633efd46f879db4646776a262d0263f",
+          "title": "feat(app): 新增版本标识并完善找回密码回跳配置",
+          "detail": "feature | commit bfbc225",
+          "status": "done",
+          "progress": "100%",
+          "priority": "P2",
+          "owner": "gradient30",
+          "component": "src",
+          "due_date": "",
+          "updated_at": "2026-02-28T15:02:38+08:00",
+          "source_id": "commit-bfbc22599848b0ab5ec6a4dc033e97ca030a8e4e"
+        },
+        {
+          "item_id": "PROG-0080",
+          "fingerprint": "1abc599a8cc0fd5f830866be7781e903714a9bf0",
+          "title": "chore(sync): 优化 tcloud 同步脚本并升级版本号",
+          "detail": "optimization | commit 6fe5530",
+          "status": "done",
+          "progress": "100%",
+          "priority": "P3",
+          "owner": "gradient30",
+          "component": "git-sync-to-tcloud.sh",
+          "due_date": "",
+          "updated_at": "2026-02-28T15:05:33+08:00",
+          "source_id": "commit-6fe5530dbd101698789a5fae4df44b90e6479565"
+        }
+      ],
+      "blockers": [],
+      "decisions": [],
+      "next_steps": [],
+      "meta": {
+        "created_at": "2026-02-28T18:31:07+08:00"
       }
     }
   }
