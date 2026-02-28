@@ -4,21 +4,32 @@
   <meta charset="utf-8">
   <title>AI Helper</title>
   <script>
-    /**
-     * GitHub Pages SPA 路由修复脚本
-     * 当用户刷新非根路径（如 /providers）时，GitHub Pages 返回 404。
-     * 此脚本将路径编码后重定向到根路径，由 index.html 中的脚本还原。
-     *
-     * ⚠️ 如果你的 GitHub 仓库名不是 ai-helper，需同步修改下方 base 变量。
-     */
-    // 项目级 Pages（仓库名 aix-helper）：base = '/aix-helper'（不加结尾斜杠）
-    // 用户级 Pages（仓库名为 username.github.io）：base = ''（空字符串）
-    var base = '/aix-helper';
-    var l = window.location;
-    var path = l.pathname.replace(base, '') || '/';
-    l.replace(
-      base + '/?p=' + encodeURIComponent(path) + (l.search ? '&q=' + encodeURIComponent(l.search.slice(1)) : '') + l.hash
-    );
+    (function () {
+      var l = window.location;
+      var params = new URLSearchParams(l.search);
+
+      // 已经是中转参数时不再重写，避免 p/q 无限嵌套循环
+      if (params.has('p')) return;
+
+      // 自动识别 GitHub Pages 项目级子路径；Cloudflare Pages 根路径使用空 base
+      var base = l.pathname.indexOf('/aix-helper/') === 0 || l.pathname === '/aix-helper'
+        ? '/aix-helper'
+        : '';
+
+      var path = l.pathname;
+      if (base && path.indexOf(base) === 0) {
+        path = path.slice(base.length) || '/';
+      }
+
+      var target =
+        (base || '') +
+        '/?p=' +
+        encodeURIComponent(path || '/') +
+        (l.search ? '&q=' + encodeURIComponent(l.search.slice(1)) : '') +
+        l.hash;
+
+      l.replace(target);
+    })();
   </script>
 </head>
 <body></body>
