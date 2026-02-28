@@ -34,9 +34,11 @@ function readRememberedEmail(enabled: boolean): string {
 }
 
 function isResetModeFromUrl(search: string, hash: string): boolean {
-  const mode = new URLSearchParams(search).get("mode");
+  const searchParams = new URLSearchParams(search);
+  const mode = searchParams.get("mode");
+  const searchType = searchParams.get("type");
   const hashType = new URLSearchParams(hash.replace(/^#/, "")).get("type");
-  return mode === "reset" || hashType === "recovery";
+  return mode === "reset" || searchType === "recovery" || hashType === "recovery";
 }
 
 export default function Auth() {
@@ -62,7 +64,8 @@ export default function Auth() {
   const [displayName, setDisplayName] = useState("");
   const [rememberEmail, setRememberEmail] = useState(initialRememberEmail);
   const [submitting, setSubmitting] = useState(false);
-  const hasRecoveryContext = new URLSearchParams(location.hash.replace(/^#/, "")).get("type") === "recovery"
+  const hasRecoveryContext = new URLSearchParams(location.search).get("type") === "recovery"
+    || new URLSearchParams(location.hash.replace(/^#/, "")).get("type") === "recovery"
     || !!session;
 
   useEffect(() => {

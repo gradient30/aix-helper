@@ -15,6 +15,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function resolveAuthRedirectOrigin(): string {
+  const configured = import.meta.env.VITE_AUTH_REDIRECT_ORIGIN?.trim();
+  if (configured) {
+    return configured.replace(/\/+$/, "");
+  }
+  return window.location.origin;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -54,8 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const requestPasswordReset = async (email: string) => {
+    const redirectOrigin = resolveAuthRedirectOrigin();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth?mode=reset`,
+      redirectTo: `${redirectOrigin}/auth?mode=reset`,
     });
     return { error: error as Error | null };
   };
