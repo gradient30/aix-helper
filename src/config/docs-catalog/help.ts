@@ -43,7 +43,7 @@ export const HELP_DOC_CATALOG: HelpDocCatalog = {
 export const LOCAL_DEPLOY_DOCS = {
   claude: "https://docs.anthropic.com/en/docs/claude-code/settings",
   codex: "https://developers.openai.com/codex/cli/reference",
-  gemini: "https://google-gemini.github.io/gemini-cli/docs/cli/configuration/",
+  gemini: "https://google-gemini.github.io/gemini-cli/docs/get-started/configuration",
   opencode: "https://opencode.ai/docs/config/",
 };
 

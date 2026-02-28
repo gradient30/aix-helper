@@ -27,8 +27,8 @@ const codexCommands = "https://developers.openai.com/codex/cli/reference";
 const codexReference = "https://developers.openai.com/codex/cli/reference";
 
 const geminiRoot = "https://google-gemini.github.io/gemini-cli/";
-const geminiCommands = "https://google-gemini.github.io/gemini-cli/docs/cli/commands/";
-const geminiConfig = "https://google-gemini.github.io/gemini-cli/docs/cli/configuration/";
+const geminiCommands = "https://google-gemini.github.io/gemini-cli/docs/cli/commands";
+const geminiConfig = "https://google-gemini.github.io/gemini-cli/docs/get-started/configuration";
 
 export const CLI_GUIDE_TOOLS: CliGuideTool[] = [
   {
