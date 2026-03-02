@@ -48,6 +48,36 @@ function formatScope(scope: string): string {
   return scope || "unknown";
 }
 
+function asNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function formatEvidenceSnippet(item: CheckResult): string {
+  if (!item.evidence) return "";
+
+  if (item.id.includes(":live_star_order")) {
+    const severe = asNumber(item.evidence.severe_inversion_count);
+    const minor = asNumber(item.evidence.minor_inversion_count);
+    const maxSevere = asNumber(item.evidence.max_severe_delta);
+    const maxMinor = asNumber(item.evidence.max_minor_delta);
+    const tokens: string[] = [];
+
+    if (severe !== null) tokens.push(`severe=${severe}`);
+    if (minor !== null) tokens.push(`minor=${minor}`);
+    if (maxSevere !== null) tokens.push(`max_severe_delta=${maxSevere}`);
+    if (maxMinor !== null) tokens.push(`max_minor_delta=${maxMinor}`);
+
+    return tokens.length ? ` (evidence: ${tokens.join(", ")})` : "";
+  }
+
+  if (item.scope === "links") {
+    const status = asNumber(item.evidence.status);
+    if (status !== null) return ` (evidence: status=${status})`;
+  }
+
+  return "";
+}
+
 function buildHints(failed: CheckResult[]): string[] {
   const hints = new Set<string>();
 
@@ -127,7 +157,7 @@ async function writeGithubStepSummary(views: ReportView[]): Promise<void> {
 
     lines.push(`### ${view.name} failed checks (${view.failed.length})`);
     view.failed.slice(0, 20).forEach((item) => {
-      lines.push(`- [${formatScope(item.scope)}] \`${item.id}\`: ${item.message}`);
+      lines.push(`- [${formatScope(item.scope)}] \`${item.id}\`: ${item.message}${formatEvidenceSnippet(item)}`);
     });
     if (view.failed.length > 20) {
       lines.push(`- ... and ${view.failed.length - 20} more`);
@@ -157,7 +187,7 @@ async function main(): Promise<void> {
     console.log(`[${view.name}] total=${view.summary.total} pass=${view.summary.pass} fail=${view.summary.fail}`);
     if (view.failed.length > 0) {
       view.failed.slice(0, 20).forEach((item, index) => {
-        console.log(`  ${index + 1}. [${formatScope(item.scope)}] ${item.id} - ${item.message}`);
+        console.log(`  ${index + 1}. [${formatScope(item.scope)}] ${item.id} - ${item.message}${formatEvidenceSnippet(item)}`);
       });
       if (view.failed.length > 20) {
         console.log(`  ... and ${view.failed.length - 20} more`);

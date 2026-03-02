@@ -8,6 +8,11 @@ import {
   AI_TOP_REPOS_SNAPSHOT,
   type AiRepoCategory,
 } from "../src/config/ai-tech-catalog/index.ts";
+import {
+  DEFAULT_LIVE_STAR_ORDER_CONFIG,
+  evaluateLiveStarOrder,
+  type LiveStarEntry,
+} from "./lib/live-star-order.ts";
 import { resolveGitHubToken } from "./lib/resolve-github-token.ts";
 
 type Status = "pass" | "fail";
@@ -430,7 +435,7 @@ async function main() {
   if (token) {
     for (const category of Object.keys(AI_TOP_REPOS_SNAPSHOT.categories) as AiRepoCategory[]) {
       const repos = AI_TOP_REPOS_SNAPSHOT.categories[category];
-      const liveStars: number[] = [];
+      const liveStars: LiveStarEntry[] = [];
 
       for (const item of repos) {
         const [owner, repo] = item.full_name.split("/");
@@ -444,7 +449,10 @@ async function main() {
             default_branch: string;
           }>(`${GITHUB_API}/repos/${owner}/${repo}`, token);
 
-          liveStars.push(data.stargazers_count);
+          liveStars.push({
+            full_name: item.full_name,
+            stars: data.stargazers_count,
+          });
           if (data.archived) {
             results.push(fail({
               scope: "github",
@@ -498,20 +506,48 @@ async function main() {
         }
       }
 
-      let nonIncreasing = true;
-      for (let i = 1; i < liveStars.length; i += 1) {
-        if (liveStars[i - 1] < liveStars[i]) {
-          nonIncreasing = false;
-          break;
-        }
+      const drift = evaluateLiveStarOrder(liveStars, DEFAULT_LIVE_STAR_ORDER_CONFIG);
+      const evidence = {
+        checked_pairs: Math.max(0, liveStars.length - 1),
+        minor_inversion_count: drift.minor_inversions.length,
+        severe_inversion_count: drift.severe_inversions.length,
+        max_minor_delta: drift.minor_inversions.length
+          ? Math.max(...drift.minor_inversions.map((item) => item.delta))
+          : 0,
+        max_severe_delta: drift.severe_inversions.length
+          ? Math.max(...drift.severe_inversions.map((item) => item.delta))
+          : 0,
+        thresholds: {
+          absolute_tolerance: DEFAULT_LIVE_STAR_ORDER_CONFIG.absolute_tolerance,
+          relative_tolerance: DEFAULT_LIVE_STAR_ORDER_CONFIG.relative_tolerance,
+          max_minor_pairs: DEFAULT_LIVE_STAR_ORDER_CONFIG.max_minor_pairs,
+        },
+        sample_minor_inversions: drift.minor_inversions.slice(0, 3),
+        sample_severe_inversions: drift.severe_inversions.slice(0, 3),
+      };
+
+      if (drift.should_fail) {
+        results.push(fail({
+          scope: "github",
+          id: `github:${category}:live_star_order`,
+          message: "live star order drift exceeds tolerance; rerun sync:ai-tech",
+          evidence,
+        }));
+      } else if (drift.minor_inversions.length > 0) {
+        results.push(pass({
+          scope: "github",
+          id: `github:${category}:live_star_order`,
+          message: "live star order has minor drift within tolerance",
+          evidence,
+        }));
+      } else {
+        results.push(pass({
+          scope: "github",
+          id: `github:${category}:live_star_order`,
+          message: "live stars remain non-increasing by snapshot order",
+          evidence,
+        }));
       }
-      results.push((nonIncreasing ? pass : fail)({
-        scope: "github",
-        id: `github:${category}:live_star_order`,
-        message: nonIncreasing
-          ? "live stars remain non-increasing by snapshot order"
-          : "live star order drift detected; rerun sync:ai-tech",
-      }));
     }
   }
 
