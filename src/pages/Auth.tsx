@@ -6,30 +6,90 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Terminal, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
+type RememberDuration = "7d" | "forever";
+type RememberedCredentials = {
+  email: string;
+  password: string;
+  expiresAt: number | null;
+};
 
-const REMEMBER_EMAIL_ENABLED_KEY = "auth-remember-email-enabled";
-const REMEMBER_EMAIL_VALUE_KEY = "auth-remember-email-value";
+const REMEMBER_ENABLED_KEY = "auth-remember-enabled";
+const REMEMBER_DURATION_KEY = "auth-remember-duration";
+const REMEMBER_CREDENTIALS_KEY = "auth-remember-credentials";
+const LEGACY_REMEMBER_EMAIL_ENABLED_KEY = "auth-remember-email-enabled";
+const LEGACY_REMEMBER_EMAIL_VALUE_KEY = "auth-remember-email-value";
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-function readRememberEmailEnabled(): boolean {
+function clearRememberedCredentials() {
   try {
-    const saved = localStorage.getItem(REMEMBER_EMAIL_ENABLED_KEY);
+    localStorage.removeItem(REMEMBER_CREDENTIALS_KEY);
+    localStorage.removeItem(LEGACY_REMEMBER_EMAIL_VALUE_KEY);
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function readRememberEnabled(): boolean {
+  try {
+    const saved = localStorage.getItem(REMEMBER_ENABLED_KEY);
+    if (saved === null) {
+      const legacySaved = localStorage.getItem(LEGACY_REMEMBER_EMAIL_ENABLED_KEY);
+      return legacySaved === null ? true : legacySaved === "true";
+    }
     return saved === null ? true : saved === "true";
   } catch {
     return true;
   }
 }
 
-function readRememberedEmail(enabled: boolean): string {
-  if (!enabled) return "";
+function readRememberDuration(): RememberDuration {
   try {
-    return localStorage.getItem(REMEMBER_EMAIL_VALUE_KEY) || "";
+    const saved = localStorage.getItem(REMEMBER_DURATION_KEY);
+    return saved === "forever" ? "forever" : "7d";
   } catch {
-    return "";
+    return "7d";
+  }
+}
+
+function readRememberedCredentials(enabled: boolean): Pick<RememberedCredentials, "email" | "password"> {
+  if (!enabled) return { email: "", password: "" };
+  try {
+    const raw = localStorage.getItem(REMEMBER_CREDENTIALS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<RememberedCredentials>;
+      const expiresAt = typeof parsed.expiresAt === "number" ? parsed.expiresAt : null;
+      if (expiresAt !== null && Date.now() > expiresAt) {
+        clearRememberedCredentials();
+        return { email: "", password: "" };
+      }
+      return {
+        email: typeof parsed.email === "string" ? parsed.email : "",
+        password: typeof parsed.password === "string" ? parsed.password : "",
+      };
+    }
+
+    const legacyEmail = localStorage.getItem(LEGACY_REMEMBER_EMAIL_VALUE_KEY) || "";
+    return { email: legacyEmail, password: "" };
+  } catch {
+    return { email: "", password: "" };
+  }
+}
+
+function buildRememberPayload(
+  email: string,
+  password: string,
+  duration: RememberDuration,
+): RememberedCredentials {
+  return {
+    email,
+    password,
+    expiresAt: duration === "forever" ? null : Date.now() + SEVEN_DAYS_MS,
   }
 }
 
@@ -45,7 +105,9 @@ export default function Auth() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const initialRememberEmail = readRememberEmailEnabled();
+  const initialRememberEnabled = readRememberEnabled();
+  const initialRememberDuration = readRememberDuration();
+  const initialRemembered = readRememberedCredentials(initialRememberEnabled);
   const initialMode = isResetModeFromUrl(location.search, location.hash) ? "reset" : "login";
   const {
     user,
@@ -58,11 +120,12 @@ export default function Auth() {
     updatePassword,
   } = useAuth();
   const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [email, setEmail] = useState(() => readRememberedEmail(initialRememberEmail));
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(initialRemembered.email);
+  const [password, setPassword] = useState(() => (initialMode === "login" ? initialRemembered.password : ""));
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [rememberEmail, setRememberEmail] = useState(initialRememberEmail);
+  const [rememberCredentials, setRememberCredentials] = useState(initialRememberEnabled);
+  const [rememberDuration, setRememberDuration] = useState<RememberDuration>(initialRememberDuration);
   const [submitting, setSubmitting] = useState(false);
   const hasRecoveryContext = new URLSearchParams(location.search).get("type") === "recovery"
     || new URLSearchParams(location.hash.replace(/^#/, "")).get("type") === "recovery"
@@ -76,19 +139,22 @@ export default function Auth() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(REMEMBER_EMAIL_ENABLED_KEY, rememberEmail ? "true" : "false");
-      if (!rememberEmail) {
-        localStorage.removeItem(REMEMBER_EMAIL_VALUE_KEY);
+      localStorage.setItem(REMEMBER_ENABLED_KEY, rememberCredentials ? "true" : "false");
+      localStorage.setItem(REMEMBER_DURATION_KEY, rememberDuration);
+      if (!rememberCredentials) {
+        clearRememberedCredentials();
       }
     } catch {
       // ignore storage failures
     }
-  }, [rememberEmail]);
+  }, [rememberCredentials, rememberDuration]);
 
   const goToLogin = () => {
     setMode("login");
-    setPassword("");
     setConfirmPassword("");
+    const remembered = readRememberedCredentials(rememberCredentials);
+    setEmail(remembered.email);
+    setPassword(remembered.password);
     navigate("/auth", { replace: true });
   };
 
@@ -120,10 +186,12 @@ export default function Auth() {
           return;
         }
         try {
-          if (rememberEmail) {
-            localStorage.setItem(REMEMBER_EMAIL_VALUE_KEY, trimmedEmail);
+          if (rememberCredentials) {
+            const payload = buildRememberPayload(trimmedEmail, password, rememberDuration);
+            localStorage.setItem(REMEMBER_CREDENTIALS_KEY, JSON.stringify(payload));
+            localStorage.removeItem(LEGACY_REMEMBER_EMAIL_VALUE_KEY);
           } else {
-            localStorage.removeItem(REMEMBER_EMAIL_VALUE_KEY);
+            clearRememberedCredentials();
           }
         } catch {
           // ignore storage failures
@@ -289,24 +357,45 @@ export default function Auth() {
               </>
             )}
             {mode === "login" && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="rememberEmail"
-                    checked={rememberEmail}
-                    onCheckedChange={(checked) => setRememberEmail(checked === true)}
-                  />
-                  <Label htmlFor="rememberEmail" className="font-normal">
-                    {t("auth.rememberEmail")}
-                  </Label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="rememberCredentials"
+                      checked={rememberCredentials}
+                      onCheckedChange={(checked) => setRememberCredentials(checked === true)}
+                    />
+                    <Label htmlFor="rememberCredentials" className="font-normal">
+                      {t("auth.remember")}
+                    </Label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMode("forgot")}
+                    className="text-sm text-primary underline-offset-4 hover:underline"
+                  >
+                    {t("auth.forgotPassword")}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setMode("forgot")}
-                  className="text-sm text-primary underline-offset-4 hover:underline"
-                >
-                  {t("auth.forgotPassword")}
-                </button>
+                {rememberCredentials && (
+                  <div className="space-y-2">
+                    <Label htmlFor="rememberDuration">{t("auth.rememberDuration")}</Label>
+                    <Select
+                      value={rememberDuration}
+                      onValueChange={(value) =>
+                        setRememberDuration(value === "forever" ? "forever" : "7d")
+                      }
+                    >
+                      <SelectTrigger id="rememberDuration">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7d">{t("auth.remember7Days")}</SelectItem>
+                        <SelectItem value="forever">{t("auth.rememberForever")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             )}
             <Button type="submit" className="w-full" disabled={submitting}>
