@@ -71,9 +71,13 @@ describe("live-star-order evaluator", () => {
       entry("a/repo1", 10000),
       entry("a/repo2", 10250),
     ]);
+    const expectedTolerance = Math.max(
+      DEFAULT_LIVE_STAR_ORDER_CONFIG.absolute_tolerance,
+      Math.floor(10250 * DEFAULT_LIVE_STAR_ORDER_CONFIG.relative_tolerance),
+    );
 
     expect(result.should_fail).toBe(false);
     expect(result.minor_inversions).toHaveLength(1);
-    expect(result.minor_inversions[0].tolerance).toBe(307);
+    expect(result.minor_inversions[0].tolerance).toBe(expectedTolerance);
   });
 });

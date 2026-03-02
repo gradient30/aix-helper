@@ -28,7 +28,8 @@ export type LiveStarOrderConfig = {
 
 export const DEFAULT_LIVE_STAR_ORDER_CONFIG: LiveStarOrderConfig = {
   absolute_tolerance: 120,
-  relative_tolerance: 0.03,
+  // GitHub stars update with eventual consistency; allow small adjacent drift.
+  relative_tolerance: 0.05,
   max_minor_pairs: 3,
 };
 

@@ -5,6 +5,10 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const useAuthMock = vi.fn();
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => useAuthMock(),
@@ -24,7 +28,7 @@ describe("ProtectedRoute", () => {
     useAuthMock.mockReturnValue({ user: null, loading: false });
 
     render(
-      <MemoryRouter initialEntries={["/#access_token=abc&type=recovery"]}>
+      <MemoryRouter initialEntries={["/#access_token=abc&type=recovery"]} future={routerFuture}>
         <Routes>
           <Route path="/" element={<ProtectedRoute><div>private</div></ProtectedRoute>} />
           <Route path="/auth" element={<AuthLocation />} />
@@ -39,7 +43,7 @@ describe("ProtectedRoute", () => {
     useAuthMock.mockReturnValue({ user: null, loading: false });
 
     render(
-      <MemoryRouter initialEntries={["/providers"]}>
+      <MemoryRouter initialEntries={["/providers"]} future={routerFuture}>
         <Routes>
           <Route path="/providers" element={<ProtectedRoute><div>private</div></ProtectedRoute>} />
           <Route path="/auth" element={<AuthLocation />} />
@@ -54,7 +58,7 @@ describe("ProtectedRoute", () => {
     useAuthMock.mockReturnValue({ user: { id: "u1" }, loading: false });
 
     render(
-      <MemoryRouter initialEntries={["/providers"]}>
+      <MemoryRouter initialEntries={["/providers"]} future={routerFuture}>
         <Routes>
           <Route path="/providers" element={<ProtectedRoute><div>private</div></ProtectedRoute>} />
         </Routes>

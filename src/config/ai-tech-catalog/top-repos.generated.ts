@@ -1,7 +1,7 @@
 import type { AiTopReposSnapshot } from "./types";
 
 export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
-  "generated_at": "2026-02-28T03:11:55.980Z",
+  "generated_at": "2026-03-02T10:03:29.138Z",
   "baseline_date": "2026-02-23",
   "source_policy": {
     "zh": "官方优先 + 主流平台补充；数据由 GitHub API 采集。",
@@ -18,8 +18,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 1,
         "full_name": "n8n-io/n8n",
         "repo_url": "https://github.com/n8n-io/n8n",
-        "stars": 176763,
-        "pushed_at": "2026-02-28T02:27:55Z",
+        "stars": 177134,
+        "pushed_at": "2026-03-02T10:01:06Z",
         "recommended_stars": 5,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -42,8 +42,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 2,
         "full_name": "activepieces/activepieces",
         "repo_url": "https://github.com/activepieces/activepieces",
-        "stars": 20986,
-        "pushed_at": "2026-02-28T02:32:55Z",
+        "stars": 21029,
+        "pushed_at": "2026-03-02T09:56:37Z",
         "recommended_stars": 5,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -66,7 +66,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 3,
         "full_name": "enescingoz/awesome-n8n-templates",
         "repo_url": "https://github.com/enescingoz/awesome-n8n-templates",
-        "stars": 19530,
+        "stars": 19654,
         "pushed_at": "2025-11-02T15:43:39Z",
         "recommended_stars": 4,
         "recommendation_note": {
@@ -90,8 +90,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 4,
         "full_name": "iflow-ai/iflow-cli",
         "repo_url": "https://github.com/iflow-ai/iflow-cli",
-        "stars": 4766,
-        "pushed_at": "2026-01-05T04:30:11Z",
+        "stars": 4819,
+        "pushed_at": "2026-03-02T06:59:23Z",
         "recommended_stars": 4,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -114,7 +114,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 5,
         "full_name": "AIDC-AI/ComfyUI-Copilot",
         "repo_url": "https://github.com/AIDC-AI/ComfyUI-Copilot",
-        "stars": 4633,
+        "stars": 4641,
         "pushed_at": "2026-01-12T03:12:49Z",
         "recommended_stars": 3,
         "recommendation_note": {
@@ -138,8 +138,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 6,
         "full_name": "pipeshub-ai/pipeshub-ai",
         "repo_url": "https://github.com/pipeshub-ai/pipeshub-ai",
-        "stars": 2664,
-        "pushed_at": "2026-02-27T11:05:20Z",
+        "stars": 2666,
+        "pushed_at": "2026-03-02T09:50:13Z",
         "recommended_stars": 3,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -186,7 +186,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 8,
         "full_name": "vercel-labs/workflow-builder-template",
         "repo_url": "https://github.com/vercel-labs/workflow-builder-template",
-        "stars": 1038,
+        "stars": 1041,
         "pushed_at": "2026-01-13T08:27:13Z",
         "recommended_stars": 2,
         "recommendation_note": {
@@ -210,8 +210,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 9,
         "full_name": "FuzzingLabs/fuzzforge_ai",
         "repo_url": "https://github.com/FuzzingLabs/fuzzforge_ai",
-        "stars": 749,
-        "pushed_at": "2026-02-26T10:17:01Z",
+        "stars": 752,
+        "pushed_at": "2026-03-02T01:19:40Z",
         "recommended_stars": 1,
         "recommendation_note": {
           "zh": "建议先在试点项目验证后再扩大使用范围。",
@@ -260,7 +260,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 1,
         "full_name": "anthropics/skills",
         "repo_url": "https://github.com/anthropics/skills",
-        "stars": 78654,
+        "stars": 80882,
         "pushed_at": "2026-02-25T04:28:41Z",
         "recommended_stars": 5,
         "recommendation_note": {
@@ -284,8 +284,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 2,
         "full_name": "affaan-m/everything-claude-code",
         "repo_url": "https://github.com/affaan-m/everything-claude-code",
-        "stars": 54167,
-        "pushed_at": "2026-02-27T14:06:41Z",
+        "stars": 56725,
+        "pushed_at": "2026-03-01T20:07:13Z",
         "recommended_stars": 5,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -308,7 +308,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 3,
         "full_name": "ComposioHQ/awesome-claude-skills",
         "repo_url": "https://github.com/ComposioHQ/awesome-claude-skills",
-        "stars": 38519,
+        "stars": 39468,
         "pushed_at": "2026-02-19T06:22:06Z",
         "recommended_stars": 4,
         "recommendation_note": {
@@ -332,8 +332,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 4,
         "full_name": "sickn33/antigravity-awesome-skills",
         "repo_url": "https://github.com/sickn33/antigravity-awesome-skills",
-        "stars": 16681,
-        "pushed_at": "2026-02-27T08:20:13Z",
+        "stars": 17890,
+        "pushed_at": "2026-03-02T06:20:29Z",
         "recommended_stars": 4,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -356,8 +356,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 5,
         "full_name": "OthmanAdi/planning-with-files",
         "repo_url": "https://github.com/OthmanAdi/planning-with-files",
-        "stars": 14752,
-        "pushed_at": "2026-02-28T00:11:17Z",
+        "stars": 14950,
+        "pushed_at": "2026-02-28T12:58:24Z",
         "recommended_stars": 3,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -378,11 +378,35 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
       {
         "category": "skill_repos",
         "rank": 6,
+        "full_name": "K-Dense-AI/claude-scientific-skills",
+        "repo_url": "https://github.com/K-Dense-AI/claude-scientific-skills",
+        "stars": 10642,
+        "pushed_at": "2026-03-02T02:00:44Z",
+        "recommended_stars": 3,
+        "recommendation_note": {
+          "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
+          "en": "Stable practical value; recommended for scenario-based standard adoption."
+        },
+        "app_scenarios": {
+          "zh": "Skill 资产复用、团队经验沉淀与工程治理。",
+          "en": "Skill reuse, team knowledge codification, and engineering governance."
+        },
+        "verification": {
+          "last_verified_at": "2026-02-23",
+          "verification_status": "pass",
+          "verification_reason": "GitHub API 数据采集与活跃度窗口校验通过。",
+          "source_url": "https://github.com/K-Dense-AI/claude-scientific-skills",
+          "verification_source": "github_api"
+        }
+      },
+      {
+        "category": "skill_repos",
+        "rank": 7,
         "full_name": "openai/skills",
         "repo_url": "https://github.com/openai/skills",
-        "stars": 10075,
+        "stars": 10368,
         "pushed_at": "2026-02-27T23:43:39Z",
-        "recommended_stars": 3,
+        "recommended_stars": 2,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
           "en": "Stable practical value; recommended for scenario-based standard adoption."
@@ -401,10 +425,10 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
       },
       {
         "category": "skill_repos",
-        "rank": 7,
+        "rank": 8,
         "full_name": "coreyhaines31/marketingskills",
         "repo_url": "https://github.com/coreyhaines31/marketingskills",
-        "stars": 9779,
+        "stars": 10190,
         "pushed_at": "2026-02-27T18:05:01Z",
         "recommended_stars": 2,
         "recommendation_note": {
@@ -425,34 +449,10 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
       },
       {
         "category": "skill_repos",
-        "rank": 8,
-        "full_name": "K-Dense-AI/claude-scientific-skills",
-        "repo_url": "https://github.com/K-Dense-AI/claude-scientific-skills",
-        "stars": 9537,
-        "pushed_at": "2026-02-27T21:42:16Z",
-        "recommended_stars": 2,
-        "recommendation_note": {
-          "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
-          "en": "Stable practical value; recommended for scenario-based standard adoption."
-        },
-        "app_scenarios": {
-          "zh": "Skill 资产复用、团队经验沉淀与工程治理。",
-          "en": "Skill reuse, team knowledge codification, and engineering governance."
-        },
-        "verification": {
-          "last_verified_at": "2026-02-23",
-          "verification_status": "pass",
-          "verification_reason": "GitHub API 数据采集与活跃度窗口校验通过。",
-          "source_url": "https://github.com/K-Dense-AI/claude-scientific-skills",
-          "verification_source": "github_api"
-        }
-      },
-      {
-        "category": "skill_repos",
         "rank": 9,
         "full_name": "diet103/claude-code-infrastructure-showcase",
         "repo_url": "https://github.com/diet103/claude-code-infrastructure-showcase",
-        "stars": 9081,
+        "stars": 9105,
         "pushed_at": "2025-10-31T01:41:31Z",
         "recommended_stars": 1,
         "recommendation_note": {
@@ -476,8 +476,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 10,
         "full_name": "aden-hive/hive",
         "repo_url": "https://github.com/aden-hive/hive",
-        "stars": 8470,
-        "pushed_at": "2026-02-28T03:03:18Z",
+        "stars": 8537,
+        "pushed_at": "2026-03-02T09:57:52Z",
         "recommended_stars": 1,
         "recommendation_note": {
           "zh": "建议先在试点项目验证后再扩大使用范围。",
@@ -502,7 +502,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 1,
         "full_name": "punkpeye/awesome-mcp-servers",
         "repo_url": "https://github.com/punkpeye/awesome-mcp-servers",
-        "stars": 81750,
+        "stars": 81928,
         "pushed_at": "2026-02-26T06:01:35Z",
         "recommended_stars": 5,
         "recommendation_note": {
@@ -526,8 +526,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 2,
         "full_name": "upstash/context7",
         "repo_url": "https://github.com/upstash/context7",
-        "stars": 47166,
-        "pushed_at": "2026-02-27T13:28:06Z",
+        "stars": 47392,
+        "pushed_at": "2026-03-01T10:38:06Z",
         "recommended_stars": 5,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -550,7 +550,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 3,
         "full_name": "microsoft/playwright-mcp",
         "repo_url": "https://github.com/microsoft/playwright-mcp",
-        "stars": 27838,
+        "stars": 27983,
         "pushed_at": "2026-02-25T19:10:43Z",
         "recommended_stars": 4,
         "recommendation_note": {
@@ -574,7 +574,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 4,
         "full_name": "github/github-mcp-server",
         "repo_url": "https://github.com/github/github-mcp-server",
-        "stars": 27307,
+        "stars": 27376,
         "pushed_at": "2026-02-27T10:02:45Z",
         "recommended_stars": 4,
         "recommendation_note": {
@@ -598,8 +598,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 5,
         "full_name": "PrefectHQ/fastmcp",
         "repo_url": "https://github.com/PrefectHQ/fastmcp",
-        "stars": 23218,
-        "pushed_at": "2026-02-28T02:53:47Z",
+        "stars": 23281,
+        "pushed_at": "2026-03-01T19:20:46Z",
         "recommended_stars": 3,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -622,8 +622,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 6,
         "full_name": "activepieces/activepieces",
         "repo_url": "https://github.com/activepieces/activepieces",
-        "stars": 20986,
-        "pushed_at": "2026-02-28T02:32:55Z",
+        "stars": 21029,
+        "pushed_at": "2026-03-02T09:56:37Z",
         "recommended_stars": 3,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -646,8 +646,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 7,
         "full_name": "oraios/serena",
         "repo_url": "https://github.com/oraios/serena",
-        "stars": 20753,
-        "pushed_at": "2026-02-27T21:33:17Z",
+        "stars": 20852,
+        "pushed_at": "2026-03-01T23:25:32Z",
         "recommended_stars": 2,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -670,8 +670,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 8,
         "full_name": "ruvnet/ruflo",
         "repo_url": "https://github.com/ruvnet/ruflo",
-        "stars": 15746,
-        "pushed_at": "2026-02-28T03:08:27Z",
+        "stars": 17638,
+        "pushed_at": "2026-02-28T18:26:54Z",
         "recommended_stars": 2,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -694,8 +694,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 9,
         "full_name": "microsoft/mcp-for-beginners",
         "repo_url": "https://github.com/microsoft/mcp-for-beginners",
-        "stars": 14513,
-        "pushed_at": "2026-02-27T15:29:53Z",
+        "stars": 14527,
+        "pushed_at": "2026-02-28T17:14:03Z",
         "recommended_stars": 1,
         "recommendation_note": {
           "zh": "建议先在试点项目验证后再扩大使用范围。",
@@ -718,7 +718,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 10,
         "full_name": "GLips/Figma-Context-MCP",
         "repo_url": "https://github.com/GLips/Figma-Context-MCP",
-        "stars": 13294,
+        "stars": 13328,
         "pushed_at": "2026-02-19T07:31:04Z",
         "recommended_stars": 1,
         "recommendation_note": {
@@ -744,7 +744,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 1,
         "full_name": "dair-ai/Prompt-Engineering-Guide",
         "repo_url": "https://github.com/dair-ai/Prompt-Engineering-Guide",
-        "stars": 70905,
+        "stars": 71008,
         "pushed_at": "2026-02-26T20:33:36Z",
         "recommended_stars": 5,
         "recommendation_note": {
@@ -768,8 +768,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 2,
         "full_name": "mlflow/mlflow",
         "repo_url": "https://github.com/mlflow/mlflow",
-        "stars": 24461,
-        "pushed_at": "2026-02-28T01:08:24Z",
+        "stars": 24501,
+        "pushed_at": "2026-03-02T07:08:59Z",
         "recommended_stars": 5,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -792,8 +792,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 3,
         "full_name": "langfuse/langfuse",
         "repo_url": "https://github.com/langfuse/langfuse",
-        "stars": 22404,
-        "pushed_at": "2026-02-28T00:23:11Z",
+        "stars": 22494,
+        "pushed_at": "2026-02-28T11:18:49Z",
         "recommended_stars": 4,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -816,8 +816,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 4,
         "full_name": "comet-ml/opik",
         "repo_url": "https://github.com/comet-ml/opik",
-        "stars": 17869,
-        "pushed_at": "2026-02-27T22:26:10Z",
+        "stars": 17958,
+        "pushed_at": "2026-03-02T09:54:51Z",
         "recommended_stars": 4,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -840,8 +840,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 5,
         "full_name": "promptfoo/promptfoo",
         "repo_url": "https://github.com/promptfoo/promptfoo",
-        "stars": 10689,
-        "pushed_at": "2026-02-28T02:20:20Z",
+        "stars": 10739,
+        "pushed_at": "2026-03-02T09:32:23Z",
         "recommended_stars": 3,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -864,7 +864,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 6,
         "full_name": "ZeroLu/awesome-nanobanana-pro",
         "repo_url": "https://github.com/ZeroLu/awesome-nanobanana-pro",
-        "stars": 9136,
+        "stars": 9202,
         "pushed_at": "2026-02-13T09:16:18Z",
         "recommended_stars": 3,
         "recommendation_note": {
@@ -888,8 +888,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 7,
         "full_name": "Arize-ai/phoenix",
         "repo_url": "https://github.com/Arize-ai/phoenix",
-        "stars": 8693,
-        "pushed_at": "2026-02-28T00:13:54Z",
+        "stars": 8707,
+        "pushed_at": "2026-03-02T08:29:25Z",
         "recommended_stars": 2,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -912,7 +912,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 8,
         "full_name": "davidkimai/Context-Engineering",
         "repo_url": "https://github.com/davidkimai/Context-Engineering",
-        "stars": 8479,
+        "stars": 8500,
         "pushed_at": "2026-02-27T05:04:18Z",
         "recommended_stars": 2,
         "recommendation_note": {
@@ -936,7 +936,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 9,
         "full_name": "ai-boost/awesome-prompts",
         "repo_url": "https://github.com/ai-boost/awesome-prompts",
-        "stars": 7348,
+        "stars": 7354,
         "pushed_at": "2025-06-20T07:38:15Z",
         "recommended_stars": 1,
         "recommendation_note": {
@@ -960,7 +960,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 10,
         "full_name": "NirDiamant/Prompt_Engineering",
         "repo_url": "https://github.com/NirDiamant/Prompt_Engineering",
-        "stars": 7205,
+        "stars": 7215,
         "pushed_at": "2026-02-17T20:32:20Z",
         "recommended_stars": 1,
         "recommendation_note": {
@@ -986,8 +986,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 1,
         "full_name": "langflow-ai/langflow",
         "repo_url": "https://github.com/langflow-ai/langflow",
-        "stars": 145135,
-        "pushed_at": "2026-02-28T02:07:39Z",
+        "stars": 145186,
+        "pushed_at": "2026-03-02T07:00:18Z",
         "recommended_stars": 5,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -1010,8 +1010,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 2,
         "full_name": "langgenius/dify",
         "repo_url": "https://github.com/langgenius/dify",
-        "stars": 130621,
-        "pushed_at": "2026-02-28T03:11:26Z",
+        "stars": 130889,
+        "pushed_at": "2026-03-02T10:03:48Z",
         "recommended_stars": 5,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -1034,8 +1034,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 3,
         "full_name": "langchain-ai/langchain",
         "repo_url": "https://github.com/langchain-ai/langchain",
-        "stars": 127704,
-        "pushed_at": "2026-02-27T23:42:51Z",
+        "stars": 127926,
+        "pushed_at": "2026-03-02T08:08:08Z",
         "recommended_stars": 4,
         "recommendation_note": {
           "zh": "综合 stars 与活跃度表现领先，建议优先纳入生产工具链。",
@@ -1058,7 +1058,7 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 4,
         "full_name": "x1xhlol/system-prompts-and-models-of-ai-tools",
         "repo_url": "https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools",
-        "stars": 125934,
+        "stars": 127070,
         "pushed_at": "2026-02-17T11:22:32Z",
         "recommended_stars": 4,
         "recommendation_note": {
@@ -1082,8 +1082,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 5,
         "full_name": "anomalyco/opencode",
         "repo_url": "https://github.com/anomalyco/opencode",
-        "stars": 112561,
-        "pushed_at": "2026-02-28T02:58:03Z",
+        "stars": 113997,
+        "pushed_at": "2026-03-02T09:29:01Z",
         "recommended_stars": 3,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -1106,8 +1106,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 6,
         "full_name": "Shubhamsaboo/awesome-llm-apps",
         "repo_url": "https://github.com/Shubhamsaboo/awesome-llm-apps",
-        "stars": 97798,
-        "pushed_at": "2026-02-25T05:42:10Z",
+        "stars": 98980,
+        "pushed_at": "2026-03-02T07:16:17Z",
         "recommended_stars": 3,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -1130,8 +1130,8 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
         "rank": 7,
         "full_name": "google-gemini/gemini-cli",
         "repo_url": "https://github.com/google-gemini/gemini-cli",
-        "stars": 95934,
-        "pushed_at": "2026-02-28T02:30:33Z",
+        "stars": 96185,
+        "pushed_at": "2026-03-02T09:39:13Z",
         "recommended_stars": 2,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
@@ -1152,38 +1152,14 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
       {
         "category": "agent_repos",
         "rank": 8,
-        "full_name": "browser-use/browser-use",
-        "repo_url": "https://github.com/browser-use/browser-use",
-        "stars": 79165,
-        "pushed_at": "2026-02-28T03:04:49Z",
+        "full_name": "anthropics/skills",
+        "repo_url": "https://github.com/anthropics/skills",
+        "stars": 80882,
+        "pushed_at": "2026-02-25T04:28:41Z",
         "recommended_stars": 2,
         "recommendation_note": {
           "zh": "具备稳定实践价值，建议在标准流程中按场景引入。",
           "en": "Stable practical value; recommended for scenario-based standard adoption."
-        },
-        "app_scenarios": {
-          "zh": "多 Agent 编排、任务分解与闭环执行。",
-          "en": "Multi-agent orchestration, task decomposition, and closed-loop execution."
-        },
-        "verification": {
-          "last_verified_at": "2026-02-23",
-          "verification_status": "pass",
-          "verification_reason": "GitHub API 数据采集与活跃度窗口校验通过。",
-          "source_url": "https://github.com/browser-use/browser-use",
-          "verification_source": "github_api"
-        }
-      },
-      {
-        "category": "agent_repos",
-        "rank": 9,
-        "full_name": "anthropics/skills",
-        "repo_url": "https://github.com/anthropics/skills",
-        "stars": 78654,
-        "pushed_at": "2026-02-25T04:28:41Z",
-        "recommended_stars": 1,
-        "recommendation_note": {
-          "zh": "建议先在试点项目验证后再扩大使用范围。",
-          "en": "Validate in pilot projects before broader rollout."
         },
         "app_scenarios": {
           "zh": "多 Agent 编排、任务分解与闭环执行。",
@@ -1199,11 +1175,35 @@ export const AI_TOP_REPOS_SNAPSHOT: AiTopReposSnapshot = {
       },
       {
         "category": "agent_repos",
+        "rank": 9,
+        "full_name": "browser-use/browser-use",
+        "repo_url": "https://github.com/browser-use/browser-use",
+        "stars": 79350,
+        "pushed_at": "2026-03-02T07:00:46Z",
+        "recommended_stars": 1,
+        "recommendation_note": {
+          "zh": "建议先在试点项目验证后再扩大使用范围。",
+          "en": "Validate in pilot projects before broader rollout."
+        },
+        "app_scenarios": {
+          "zh": "多 Agent 编排、任务分解与闭环执行。",
+          "en": "Multi-agent orchestration, task decomposition, and closed-loop execution."
+        },
+        "verification": {
+          "last_verified_at": "2026-02-23",
+          "verification_status": "pass",
+          "verification_reason": "GitHub API 数据采集与活跃度窗口校验通过。",
+          "source_url": "https://github.com/browser-use/browser-use",
+          "verification_source": "github_api"
+        }
+      },
+      {
+        "category": "agent_repos",
         "rank": 10,
         "full_name": "infiniflow/ragflow",
         "repo_url": "https://github.com/infiniflow/ragflow",
-        "stars": 73874,
-        "pushed_at": "2026-02-28T02:51:39Z",
+        "stars": 74012,
+        "pushed_at": "2026-03-02T09:32:53Z",
         "recommended_stars": 1,
         "recommendation_note": {
           "zh": "建议先在试点项目验证后再扩大使用范围。",

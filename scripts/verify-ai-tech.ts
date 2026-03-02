@@ -47,6 +47,7 @@ const TRANSIENT_DOMAINS = [
   "microsoft.github.io",
   "huggingface.co",
   "github.com",
+  "registry.modelcontextprotocol.io",
 ];
 const URL_MAX_ATTEMPTS = 3;
 
