@@ -358,7 +358,7 @@ export default function Auth() {
             )}
             {mode === "login" && (
               <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="rememberCredentials"
@@ -378,13 +378,20 @@ export default function Auth() {
                           setRememberDuration(value);
                         }
                       }}
-                      size="sm"
-                      variant="outline"
+                      className="rounded-full border border-input bg-background p-0.5"
                     >
-                      <ToggleGroupItem value="7d" aria-label={t("auth.remember7Days")}>
+                      <ToggleGroupItem
+                        value="7d"
+                        aria-label={t("auth.remember7Days")}
+                        className="h-7 min-w-[52px] rounded-full px-3 text-xs font-medium text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=off]:hover:bg-muted/70"
+                      >
                         {t("auth.remember7Days")}
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="forever" aria-label={t("auth.rememberForever")}>
+                      <ToggleGroupItem
+                        value="forever"
+                        aria-label={t("auth.rememberForever")}
+                        className="h-7 min-w-[52px] rounded-full px-3 text-xs font-medium text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=off]:hover:bg-muted/70"
+                      >
                         {t("auth.rememberForever")}
                       </ToggleGroupItem>
                     </ToggleGroup>

@@ -1,92 +1,259 @@
-# Supabase 去 Lovable 耦合落地手册
+# Supabase 去 Lovable 剥离手册（高中生模式）
 
-## 1. 目标
+> 这份文档是“照着做就能完成”的版本。  
+> 你不需要理解所有概念，只需要按顺序执行。
 
-将项目从历史 Lovable 托管依赖中剥离，确保：
+## 0. 你现在要做什么
 
-1. 前端不再隐式回退到旧 Supabase 项目。
-2. Edge Function 不再依赖 `ai.gateway.lovable.dev`。
-3. Supabase CLI 配置不再绑定旧 `project_id`。
-4. 现有部署链路（GitHub Pages + Cloudflare Pages）保持不变，仅更新配置。
+你要把项目从“历史 Lovable 后端”切到“你自己的 Supabase 后端”。
 
-## 2. 已完成代码改造
+你的既定策略：
 
-1. 去除 `vite` 内旧 Supabase fallback（避免误连旧库）  
-文件：`vite.config.ts`
-2. `optimize-prompt` 改为通用 AI 网关配置，不再写死 Lovable AI Gateway  
-文件：`supabase/functions/optimize-prompt/index.ts`
-3. `supabase/config.toml` 替换旧项目 ref 为占位值  
-文件：`supabase/config.toml`
+1. 测试数据可以清空，不做迁移。
+2. 正式域名用 `https://helper.996fb.cn`。
+3. Cloudflare Pages 是正式入口。
+4. GitHub Pages 只当备用/预览入口。
 
-## 3. 新增/变更的环境变量
+---
 
-### 前端构建（GitHub Actions / 本地构建）
+## 1. 先看术语（不懂就看这里）
 
-1. `VITE_SUPABASE_URL`（必填）
-2. `VITE_SUPABASE_PUBLISHABLE_KEY`（必填）
-3. `VITE_SUPABASE_PROJECT_ID`（可选，不填会从 URL 推断）
-4. `VITE_AUTH_REDIRECT_URL`（可选）
-5. `VITE_AUTH_REDIRECT_ORIGIN`（可选）
+1. `Supabase`：你的云数据库 + 登录系统。
+2. `project_ref`：Supabase 项目的唯一短 ID（像 `ewwqhzwwgtmaauuznvyy`）。
+3. `VITE_SUPABASE_URL`：前端连接数据库的地址。
+4. `VITE_SUPABASE_PUBLISHABLE_KEY`：前端匿名访问 key（可公开）。
+5. `SMTP`：邮件发送服务配置（用于“忘记密码”邮件）。
+6. `Edge Function`：运行在 Supabase 云端的函数（本项目用于 Prompt 优化）。
+7. `GitHub Secrets`：GitHub Actions 的环境变量密钥仓库。
 
-说明：
+---
 
-1. 当前仓库工作流 `deploy-pages.yml` / `deploy-cloudflare.yml` 仅显式注入了 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_PUBLISHABLE_KEY`。
-2. `VITE_SUPABASE_PROJECT_ID` 不注入也可工作（`vite.config.ts` 会从 `VITE_SUPABASE_URL` 推断）。
-3. 若你希望显式注入 `VITE_SUPABASE_PROJECT_ID`，需同步修改两条 workflow 的 `Build -> env`。
+## 2. 你需要准备的东西（开始前 2 分钟）
 
-### Supabase Edge Function: `optimize-prompt`
+## 必备
 
-1. `AI_GATEWAY_API_KEY`（必填）
-2. `AI_GATEWAY_API_URL`（可选，默认 `https://api.openai.com/v1/chat/completions`）
-3. `AI_MODEL`（可选，默认 `gpt-4o-mini`）
-4. `ALLOWED_ORIGINS`（建议配置）
+1. Supabase 账号（已登录控制台）。
+2. GitHub 仓库管理员权限（能改 Secrets）。
+3. 本地命令行可用 `supabase`（你已安装成功）。
 
-协议要求：
+## 稍后会用到
 
-1. `AI_GATEWAY_API_URL` 需兼容 OpenAI Chat Completions 协议。
-2. 响应需包含 `choices[0].message.content`，否则前端将拿不到优化结果。
+1. 新 Supabase 的 `Project URL`。
+2. 新 Supabase 的 `anon public key`。
+3. 你的 OpenAI API Key（仅当你要启用 Prompt 优化时）。
+4. 可收邮件的测试邮箱（用于找回密码测试）。
 
-## 4. 一次性落地步骤（建议顺序）
+---
 
-### Step 1: 绑定新 Supabase 项目
+## 3. 一眼看懂流程图
 
-1. 在 Supabase 控制台创建新项目。
-2. 将 `supabase/config.toml` 中 `project_id` 替换为你的新项目 ref。
-3. 本地执行：
+1. 创建/绑定新 Supabase 项目。
+2. 把数据库表结构推送到新项目。
+3. 配置 Auth 回跳地址（登录/找回密码）。
+4. 配置邮件发送（默认先通，再升级 SMTP）。
+5. 更新 GitHub Secrets（前端连接新 Supabase）。
+6. 推送 `main` 触发部署。
+7. 验收登录、找回密码、业务页面。
+8. 可选：配置并部署 Edge Functions（Prompt 优化）。
+
+---
+
+## 4. Step 1：绑定你的 Supabase 项目
+
+你这一步已经做过成功了，这里保留标准步骤，方便以后复盘。
+
+## 4.1 修改项目配置
+
+打开 `supabase/config.toml`，确认：
+
+```toml
+project_id = "你的 project_ref"
+```
+
+例子：
+
+```toml
+project_id = "ewwqhzwwgtmaauuznvyy"
+```
+
+## 4.2 绑定项目
+
+在仓库根目录执行：
 
 ```bash
-supabase link --project-ref <your_project_ref>
+supabase link --project-ref 你的project_ref
+```
+
+成功标志：
+
+1. 出现 `Finished supabase link.`
+
+## 4.3 推送数据库结构
+
+继续执行：
+
+```bash
 supabase db push
 ```
 
-### Step 2: 配置 Supabase Auth
+看到 `[Y/n]` 输入 `Y` 回车。
 
-控制台路径：`Authentication -> URL Configuration`
+成功标志：
 
-1. `Site URL` 设为主域名（建议 `https://helper.996fb.cn`）。
-2. `Additional Redirect URLs` 至少加：
-   1. `https://helper.996fb.cn/auth`
-   2. `https://helper.996fb.cn/auth?mode=reset`
-   3. `https://aix-helper.pages.dev/auth`
-   4. `https://aix-helper.pages.dev/auth?mode=reset`
-   5. 你的 GitHub Pages 地址对应 `/aix-helper/auth` 与 `?mode=reset`（如启用）
+1. 输出 `Applying migration ...`
+2. 最后输出 `Finished supabase db push.`
 
-### Step 3: 配置找回密码发件
+---
 
-控制台路径：`Authentication -> Email -> SMTP Settings`
+## 5. Step 2：配置登录与找回密码回跳地址（非常重要）
 
-推荐：Resend SMTP
+如果这一步不做，找回密码可能跳到旧域名或失败。
 
-1. Host: `smtp.resend.com`
-2. Port: `465`
-3. Username: `resend`
-4. Password: `你的 Resend API Key`
-5. Sender email/name: 你的发件地址与名称
+## 5.1 打开 Supabase 配置页面
 
-### Step 4: 部署 Supabase Functions
+1. 进入 Supabase 控制台。
+2. 选择你的项目。
+3. 左侧点 `Authentication`。
+4. 点 `URL Configuration`。
+
+## 5.2 填写 Site URL
+
+把 `Site URL` 设置为：
+
+```text
+https://helper.996fb.cn
+```
+
+## 5.3 填写 Additional Redirect URLs
+
+至少加这 4 个：
+
+1. `https://helper.996fb.cn/auth`
+2. `https://helper.996fb.cn/auth?mode=reset`
+3. `https://aix-helper.pages.dev/auth`
+4. `https://aix-helper.pages.dev/auth?mode=reset`
+
+如果你要保留 GitHub Pages 的登录预览，再额外加：
+
+1. `https://<github_username>.github.io/aix-helper/auth`
+2. `https://<github_username>.github.io/aix-helper/auth?mode=reset`
+
+## 5.4 保存并检查
+
+1. 点保存。
+2. 重新发一次找回密码邮件（旧邮件链接不会自动更新）。
+
+---
+
+## 6. Step 3：配置邮件发送（忘记密码）
+
+目标：让用户点击“忘记密码”后，稳定收到重置邮件。
+
+## 6.1 最简单做法：先不配 SMTP
+
+1. 保持 Supabase 默认邮件通道。
+2. 先测一次找回密码流程。
+3. 如果能收邮件并重置成功，说明流程已打通。
+
+## 6.2 进阶做法：改成 SMTP（推荐 Resend）
+
+适合长期稳定使用。
+
+### A. 先在 Resend 准备
+
+1. 注册并登录 Resend。
+2. 创建 API Key。
+3. 记下这个 Key（后面填到 Password）。
+
+### B. 回到 Supabase 填 SMTP
+
+路径：`Authentication -> Email -> SMTP Settings`
+
+按下面填写：
+
+1. Host：`smtp.resend.com`
+2. Port：`465`
+3. Username：`resend`
+4. Password：`你的 Resend API Key`
+5. Sender email：例如 `noreply@你的域名`
+6. Sender name：例如 `AI Helper`
+
+保存后，立刻再测一次“忘记密码”。
+
+## 6.3 成功标准
+
+1. 邮件能收到。
+2. 邮件链接跳到你的域名，不是 `*.lovable.app`。
+3. 新密码能设置成功并登录。
+
+---
+
+## 7. Step 4：更新 GitHub Secrets（前端连接新 Supabase）
+
+如果这一步不做，线上会报 `supabaseUrl is required` 或连接到旧库。
+
+## 7.1 打开仓库设置
+
+GitHub 仓库 -> `Settings` -> `Secrets and variables` -> `Actions`
+
+## 7.2 新增或修改 4 个关键变量
+
+1. `VITE_SUPABASE_URL` = 你的新 Supabase URL  （集成-Data API-API URL）
+   例：`https://ewwqhzwwgtmaauuznvyy.supabase.co`
+2. `VITE_SUPABASE_PUBLISHABLE_KEY` = 新项目 anon key（Publishable key）
+3. `VITE_AUTH_REDIRECT_URL` = `https://helper.996fb.cn/auth?mode=reset`
+4. `VITE_AUTH_REDIRECT_ORIGIN` = `https://helper.996fb.cn`
+
+## 7.3 这些值去哪里拿
+
+在 Supabase 控制台：
+
+1. `Project URL` -> 对应 `VITE_SUPABASE_URL`
+2. `API Keys` 里的 `anon` -> 对应 `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+---
+
+## 8. Step 5：触发部署
+
+1. 本地随便改一个文件（比如文档加一行）。
+2. 提交并推送到 `main`。
+3. GitHub Actions 会按顺序执行：
+   1. `Quality Gate`
+   2. `Deploy to Cloudflare Pages`
+   3. `Deploy to GitHub Pages`（备用）
+
+---
+
+## 9. Step 6：E2E 验收（照着点就行）
+
+按这个顺序测试：
+
+1. 打开 `https://helper.996fb.cn/auth`。
+2. 打开浏览器控制台，确认没有 `supabaseUrl is required`。
+3. 用新邮箱注册一个账号。
+4. 退出后再登录，确认登录正常。
+5. 进入 `providers/mcp/skills/prompts` 页面，确认都能打开。
+6. 点击“忘记密码”，收邮件，点链接进入重置页。
+7. 设置新密码并登录成功。
+8. 访问 `https://aix-helper.pages.dev`，确认备用入口也能打开。
+
+---
+
+## 10. Step 7（可选）：部署 Edge Functions（仅 Prompt 优化需要）
+
+如果你暂时不用 Prompt 优化，这一步可以先跳过。
+
+## 10.1 变量含义（简单版）
+
+1. `AI_GATEWAY_API_KEY`：你的 AI 平台密钥（最关键）。
+2. `AI_GATEWAY_API_URL`：AI 接口地址。
+3. `AI_MODEL`：模型名。
+4. `ALLOWED_ORIGINS`：允许哪些域名调用函数。
+
+## 10.2 直接复制执行（在仓库根目录）
 
 ```bash
-supabase secrets set AI_GATEWAY_API_KEY=xxx
+supabase secrets set AI_GATEWAY_API_KEY=你的真实key
 supabase secrets set AI_GATEWAY_API_URL=https://api.openai.com/v1/chat/completions
 supabase secrets set AI_MODEL=gpt-4o-mini
 supabase secrets set ALLOWED_ORIGINS=https://helper.996fb.cn,https://aix-helper.pages.dev
@@ -94,79 +261,43 @@ supabase functions deploy optimize-prompt
 supabase functions deploy test-connection
 ```
 
-说明：
+## 10.3 成功标准
 
-1. 先 `secrets set` 再 `deploy`，避免函数上线即报 `AI_GATEWAY_API_KEY not configured`。
-2. 若函数已部署，更新 secrets 后建议再次 deploy 一次确保配置生效。
+1. 命令执行无报错。
+2. 页面用 Prompt 优化时，不再出现 `AI_GATEWAY_API_KEY not configured`。
 
-### Step 5: 更新 GitHub Secrets（不改部署架构）
+---
 
-仓库路径：`Settings -> Secrets and variables -> Actions`
+## 11. 常见报错速查（报错 -> 原因 -> 解决）
 
-1. `VITE_SUPABASE_URL` = 新 Supabase URL
-2. `VITE_SUPABASE_PUBLISHABLE_KEY` = 新 anon key
-3. `VITE_SUPABASE_PROJECT_ID` = 新 project ref（可选）
-4. `VITE_AUTH_REDIRECT_URL` / `VITE_AUTH_REDIRECT_ORIGIN` 按需要配置
+| 报错/现象 | 常见原因 | 解决动作 |
+| --- | --- | --- |
+| `supabaseUrl is required` | GitHub Secrets 没填或填错 | 重填 `VITE_SUPABASE_URL`、`VITE_SUPABASE_PUBLISHABLE_KEY`，重新部署 |
+| 找回密码跳到 `*.lovable.app` | Supabase URL Configuration 仍是旧值 | 改 `Site URL`/Redirect URLs 后重发邮件 |
+| `Invalid Refresh Token` | 浏览器里还留着旧会话 | 清空该站点 `localStorage/sessionStorage` 后重登 |
+| `AI_GATEWAY_API_KEY not configured` | Edge Function secrets 没设置 | 执行 `supabase secrets set ...` 再 `functions deploy` |
+| Cloudflare 显示 `HEAD` 预览 | 工作流未显式分支 | 保持 `deploy-cloudflare.yml` 的 `--branch` 参数 |
 
-双部署（Cloudflare + GitHub Pages）特别说明：
+---
 
-1. 如果两端都要可用“忘记密码”，不建议把 `VITE_AUTH_REDIRECT_URL` 固定到单一域名。
-2. 推荐先留空 `VITE_AUTH_REDIRECT_URL` 与 `VITE_AUTH_REDIRECT_ORIGIN`，让前端按当前访问域名动态回跳。
-3. 若必须固定域名，请确认用户只在该域名入口使用找回密码。
+## 12. 回滚方案（出问题就用）
 
-推送后会继续由现有两条工作流自动部署：
+1. 不回滚代码，只回滚 GitHub Secrets 到上一组可用值。
+2. 若 Prompt 优化异常，先关闭该功能入口，保证登录和基础数据可用。
+3. 先恢复认证流程，再排查 AI 网关配置。
 
-1. GitHub Pages workflow
-2. Cloudflare Pages workflow
+---
 
-## 5. 数据迁移建议（如果你还能登录旧账号）
+## 13. 你当前进度记录（本次执行）
 
-1. 切到旧后端，导出 `Data Backup`（含 `skills_repos.json`、`skills.json`）。
-2. 切到新后端后导入顺序：
-   1. `skills_repos.json`
-   2. `skills.json`
-   3. `providers.json`
-   4. `mcp_servers.json`
-   5. `prompts.json`
-3. 账号体系（Auth users）不做跨库密码迁移，用户需新库注册/找回。
+你已完成：
 
-## 6. 验收清单
+1. `supabase link --project-ref ewwqhzwwgtmaauuznvyy`
+2. `supabase db push`（2 条 migration 已成功）
 
-1. `/auth` 登录正常，无 `supabaseUrl is required`。
-2. 忘记密码邮件链接回跳到你自己的域名，不再出现 `*.lovable.app`。
-3. Prompt 优化功能正常，`optimize-prompt` 不再依赖 `LOVABLE_API_KEY`。
-4. Cloudflare Pages 与 GitHub Pages 均可正常构建和访问。
-5. 刷新路由不出现 404 循环。
-6. 打开 Prompt 优化页执行一次请求，确认函数无 `AI_GATEWAY_API_KEY not configured`。
-7. 构建日志不再出现旧 Supabase 项目 ref（`cllruxedtdvkljmggnxd`）。
+你接下来只需要做：
 
-## 7. 非阻断残留项（建议后续清理）
-
-以下内容不影响 Supabase 切换与部署可用性，但仍带有 Lovable 字样：
-
-1. `vite.config.ts` 仍使用开发插件 `lovable-tagger`（仅开发态插件，不影响生产后端绑定）。
-2. `index.html` 的 meta/OG/Twitter 字段仍包含 `Lovable` 品牌与历史预览图。
-3. `DEPLOY_GUIDE.md` 仍有历史“连接 Lovable Cloud 后端”描述，建议后续统一改写为“自有 Supabase 后端”。
-
-## 8. 常见报错快速定位
-
-1. 报错：`supabaseUrl is required`
-   1. 检查 GitHub Secrets 是否存在且正确：`VITE_SUPABASE_URL`、`VITE_SUPABASE_PUBLISHABLE_KEY`
-   2. 检查 Actions Build 阶段是否读取到对应 env
-2. 报错：`Invalid Refresh Token: Refresh Token Not Found`
-   1. 多见于切换 Supabase 项目后浏览器仍保留旧会话
-   2. 清理站点 localStorage/sessionStorage 后重新登录
-3. 报错：`AI_GATEWAY_API_KEY not configured`
-   1. 检查 Supabase secrets 是否设置在当前 project ref
-   2. 重新 deploy `optimize-prompt`
-4. 报错：AI 返回成功但页面无内容
-   1. 检查网关响应是否包含 `choices[0].message.content`
-   2. 检查 `AI_MODEL` 是否为该网关可用模型
-
-## 9. 回滚策略（最小影响）
-
-如果新网关或新 Supabase 配置异常：
-
-1. 保留代码不回退，只回滚 Secrets 到上一版可用值。
-2. 临时禁用 `optimize-prompt` 入口（前端按钮置灰）避免影响核心登录功能。
-3. 保证 `Auth` 与主数据读写优先恢复，再处理 AI 网关配置。
+1. Step 2（Supabase Auth URL 配置）
+2. Step 3（邮件发送测试/SMTP）
+3. Step 4（GitHub Secrets 重置）
+4. Step 5 + Step 6（部署与验收）
