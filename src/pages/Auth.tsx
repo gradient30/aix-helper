@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "@/hooks/use-toast";
 import { Terminal, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -90,7 +90,7 @@ function buildRememberPayload(
     email,
     password,
     expiresAt: duration === "forever" ? null : Date.now() + SEVEN_DAYS_MS,
-  }
+  };
 }
 
 function isResetModeFromUrl(search: string, hash: string): boolean {
@@ -357,8 +357,8 @@ export default function Auth() {
               </>
             )}
             {mode === "login" && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="rememberCredentials"
@@ -369,33 +369,34 @@ export default function Auth() {
                       {t("auth.remember")}
                     </Label>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setMode("forgot")}
-                    className="text-sm text-primary underline-offset-4 hover:underline"
-                  >
-                    {t("auth.forgotPassword")}
-                  </button>
-                </div>
-                {rememberCredentials && (
-                  <div className="space-y-2">
-                    <Label htmlFor="rememberDuration">{t("auth.rememberDuration")}</Label>
-                    <Select
+                  {rememberCredentials && (
+                    <ToggleGroup
+                      type="single"
                       value={rememberDuration}
-                      onValueChange={(value) =>
-                        setRememberDuration(value === "forever" ? "forever" : "7d")
-                      }
+                      onValueChange={(value) => {
+                        if (value === "7d" || value === "forever") {
+                          setRememberDuration(value);
+                        }
+                      }}
+                      size="sm"
+                      variant="outline"
                     >
-                      <SelectTrigger id="rememberDuration">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="7d">{t("auth.remember7Days")}</SelectItem>
-                        <SelectItem value="forever">{t("auth.rememberForever")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                      <ToggleGroupItem value="7d" aria-label={t("auth.remember7Days")}>
+                        {t("auth.remember7Days")}
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="forever" aria-label={t("auth.rememberForever")}>
+                        {t("auth.rememberForever")}
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMode("forgot")}
+                  className="text-sm text-primary underline-offset-4 hover:underline"
+                >
+                  {t("auth.forgotPassword")}
+                </button>
               </div>
             )}
             <Button type="submit" className="w-full" disabled={submitting}>
