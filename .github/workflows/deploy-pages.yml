@@ -1,8 +1,9 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [main, master]
+  workflow_run:
+    workflows: ["Quality Gate"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -16,10 +17,27 @@ concurrency:
 
 jobs:
   build:
+    if: >
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          (
+            github.event.workflow_run.head_branch == 'main' ||
+            github.event.workflow_run.head_branch == 'master'
+          )
+        )
+      }}
     runs-on: ubuntu-latest
+    env:
+      TARGET_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -45,7 +63,7 @@ jobs:
           # 可选：当未设置 URL 时，指定回跳域名
           VITE_AUTH_REDIRECT_ORIGIN: ${{ secrets.VITE_AUTH_REDIRECT_ORIGIN }}
           # 构建版本元数据：每次 commit 自动变化
-          VITE_COMMIT_SHA: ${{ github.sha }}
+          VITE_COMMIT_SHA: ${{ env.TARGET_SHA }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
