@@ -35,6 +35,7 @@ test-results/
 # Tooling caches
 .cache/
 .turbo/
+.tmp/
 
 # Supabase local temp/state
 .supabase/

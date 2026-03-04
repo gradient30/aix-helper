@@ -6,6 +6,7 @@ import {
   normalizeApiKey,
   parseCurlSnippet,
   parsePythonRequestsSnippet,
+  resolveConversationScope,
   toResponseSnapshot,
 } from "@/lib/api-calls-utils";
 
@@ -91,5 +92,29 @@ print(response.json())`;
     expect(normalizeApiKey(`  "Bearer sk-abc123"  `)).toBe("sk-abc123");
     expect(normalizeApiKey("Bearer sk-xyz")).toBe("sk-xyz");
     expect(normalizeApiKey("sk-plain")).toBe("sk-plain");
+  });
+
+  test("keeps provider scope stable during same-vendor provider refresh", () => {
+    const scope = resolveConversationScope({
+      selectedVendorId: "baishan",
+      selectedProviderId: "",
+      selectedProviderObjectId: "",
+      hasProviderCandidates: true,
+      lastScope: "baishan:provider-1",
+    });
+
+    expect(scope).toBe("baishan:provider-1");
+  });
+
+  test("resets to new scope when vendor changed and no provider selected", () => {
+    const scope = resolveConversationScope({
+      selectedVendorId: "kimi",
+      selectedProviderId: "",
+      selectedProviderObjectId: "",
+      hasProviderCandidates: false,
+      lastScope: "baishan:provider-1",
+    });
+
+    expect(scope).toBe("kimi:new");
   });
 });

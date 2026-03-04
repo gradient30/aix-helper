@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "last_run_at": "2026-03-02T18:53:22+08:00",
-  "last_event_time": "2026-03-02T18:18:04+08:00",
-  "last_source_id": "commit-88d101eb2c99a9c33a9a70089024850c372d9182",
-  "total_processed_sources": 127,
+  "last_run_at": "2026-03-04T15:31:08+08:00",
+  "last_event_time": "2026-03-04T13:23:32+08:00",
+  "last_source_id": "commit-cba634fb525219122c742aa8aa9e92a82592b7e6",
+  "total_processed_sources": 129,
   "last_run_stats": {
-    "created": 6,
+    "created": 1,
     "updated": 0,
-    "skipped_duplicate": 121,
+    "skipped_duplicate": 128,
     "skipped_by_cursor": 0,
     "skipped_bad_lines": 0
   }

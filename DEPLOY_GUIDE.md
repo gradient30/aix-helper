@@ -166,7 +166,8 @@ supabase functions deploy invoke-model-api
 1. 函数部署成功
 2. `supabase/config.toml` 中存在：
    - `[functions.invoke-model-api]`
-   - `verify_jwt = true`
+   - `verify_jwt = false`
+   - 说明：由函数内部校验 token（支持 header/body 双通道），用于规避本地代理链路导致的 `Invalid JWT` 误判。
 
 ### 11.3 前端部署（必须）
 
@@ -189,3 +190,18 @@ supabase functions deploy invoke-model-api
 1. 浏览器 Network 中请求目标应为 Supabase Function（不是前端直连厂商域名）。
 2. 历史快照中不应出现明文 `Authorization`/`api_key`/`token`。
 3. API Key 不应被写入前端日志或报错弹窗。
+
+### 11.6 invoke-model-api 401/CORS 快速定位（新增）
+
+1. 先测函数预检，不先看浏览器 CORS 文案：
+   - `OPTIONS https://<project>.supabase.co/functions/v1/invoke-model-api`
+   - 若非 `200`（例如 `503 BOOT_ERROR`），先修函数启动问题。
+2. 预检 `200` 后再测业务 POST：
+   - 若 `401 Invalid JWT`，先排查本地代理/抓包插件是否改写请求（常见 `127.0.0.1:7897`）。
+3. 清理并重建登录态：
+   - 登出登录一次，确认浏览器里 `sb-<project-ref>-auth-token` 已刷新。
+4. 最终回归标准：
+   - POST 返回 `200`
+   - 页面聊天窗口出现“一问一答”。
+5. 详细复盘文档：
+   - `docs/INCIDENT_2026-03-04_INVOKE_MODEL_API_401.md`

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, Loader2, Plus, Save, Send } from "lucide-react";
@@ -15,7 +15,7 @@ import {
   parseAssistantText,
   type ChatMessage,
 } from "@/lib/api-calls-chat-utils";
-import { normalizeApiKey } from "@/lib/api-calls-utils";
+import { normalizeApiKey, resolveConversationScope } from "@/lib/api-calls-utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,6 +108,8 @@ type InvokeResult = {
   latency_ms?: number;
   raw?: string;
   normalized?: { text?: string };
+  success?: boolean;
+  error_message?: string | null;
 };
 
 const toObject = (value: unknown): Record<string, unknown> =>
@@ -119,6 +121,22 @@ const buildRequestSchema = () => [
   { key: "model", label: "model", type: "string", required: true, order: 1 },
   { key: "messages", label: "messages", type: "array_messages", required: true, order: 2 },
 ];
+
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || "").trim().replace(/\/+$/, "");
+const SUPABASE_PUBLISHABLE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "").trim();
+const INVOKE_MODEL_API_URL = `${SUPABASE_URL}/functions/v1/invoke-model-api`;
+
+function readApiErrorMessage(raw: unknown): string {
+  if (!raw || typeof raw !== "object") return "";
+  const source = raw as Record<string, unknown>;
+  const candidates: unknown[] = [source.message, source.error, source.error_message, source.reason];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return "";
+}
 
 export default function ApiCalls() {
   const { t } = useTranslation();
@@ -143,10 +161,12 @@ export default function ApiCalls() {
   const [prompt, setPrompt] = useState("");
   const [saveHistory, setSaveHistory] = useState(true);
   const [result, setResult] = useState<InvokeResult | null>(null);
+  const lastConversationScopeRef = useRef<string>("");
   const selectedTemplate = useMemo(
     () => VENDOR_TEMPLATES.find((item) => item.id === selectedVendorId) ?? VENDOR_TEMPLATES[0],
     [selectedVendorId],
   );
+  const isBaishanVendor = selectedTemplate.id === "baishan";
 
   const providersQuery = useQuery({
     queryKey: ["api-call-providers", "simple-vendors"],
@@ -164,11 +184,14 @@ export default function ApiCalls() {
   });
 
   const providers = useMemo(() => providersQuery.data ?? [], [providersQuery.data]);
+  const vendorProviders = useMemo(
+    () => providers.filter((item) => item.vendor_id === selectedVendorId),
+    [providers, selectedVendorId],
+  );
   const selectedProvider = useMemo(() => {
-    const vendorProviders = providers.filter((item) => item.vendor_id === selectedVendorId);
     if (vendorProviders.length === 0) return null;
     return vendorProviders.find((item) => item.id === selectedProviderId) ?? vendorProviders[0];
-  }, [providers, selectedProviderId, selectedVendorId]);
+  }, [selectedProviderId, vendorProviders]);
 
   const historyQuery = useQuery({
     queryKey: ["api-call-history", selectedProviderId],
@@ -187,12 +210,11 @@ export default function ApiCalls() {
   });
 
   useEffect(() => {
-    const vendorProviders = providers.filter((item) => item.vendor_id === selectedVendorId);
     const exists = vendorProviders.some((item) => item.id === selectedProviderId);
     if (!exists) {
       setSelectedProviderId(vendorProviders[0]?.id ?? "");
     }
-  }, [providers, selectedProviderId, selectedVendorId]);
+  }, [selectedProviderId, vendorProviders]);
 
   useEffect(() => {
     if (!providersQuery.error) return;
@@ -213,6 +235,15 @@ export default function ApiCalls() {
   }, [historyQuery.error, t]);
 
   useEffect(() => {
+    const currentScope = resolveConversationScope({
+      selectedVendorId,
+      selectedProviderId,
+      selectedProviderObjectId: selectedProvider?.id ?? "",
+      hasProviderCandidates: vendorProviders.length > 0,
+      lastScope: lastConversationScopeRef.current,
+    });
+    const shouldResetConversation = lastConversationScopeRef.current !== currentScope;
+
     if (selectedProvider) {
       setApiKey(selectedProvider.api_key || "");
       const defaults = toObject(selectedProvider.defaults);
@@ -255,8 +286,11 @@ export default function ApiCalls() {
       } else {
         setThinkingEnabled(selectedTemplate.defaultThinkingEnabled);
       }
-      setMessages([]);
-      setResult(null);
+      if (shouldResetConversation) {
+        setMessages([]);
+        setResult(null);
+      }
+      lastConversationScopeRef.current = currentScope;
       return;
     }
 
@@ -270,9 +304,12 @@ export default function ApiCalls() {
     setReasoningEffort(selectedTemplate.reasoningEffort);
     setThinkingEnabled(selectedTemplate.defaultThinkingEnabled);
     setTemperature(selectedTemplate.defaultTemperature);
-    setMessages([]);
-    setResult(null);
-  }, [selectedProvider, selectedTemplate]);
+    if (shouldResetConversation) {
+      setMessages([]);
+      setResult(null);
+    }
+    lastConversationScopeRef.current = currentScope;
+  }, [selectedProvider, selectedProviderId, selectedTemplate, selectedVendorId, vendorProviders.length]);
 
   const ensureProvider = async () => {
     if (!user) {
@@ -447,60 +484,77 @@ export default function ApiCalls() {
         mode: "chat",
         payload,
         save_history: saveHistory,
+        access_token: "",
       };
 
-      const invokeWithToken = async (accessToken: string) =>
-        supabase.functions.invoke("invoke-model-api", {
-          body: invokeBody,
+      const getAccessTokenOrThrow = async (): Promise<string> => {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (sessionData.session?.access_token) return sessionData.session.access_token;
+
+        const { data: refreshedData, error: refreshedError } = await supabase.auth.refreshSession();
+        if (refreshedError || !refreshedData.session?.access_token) {
+          await supabase.auth.signOut();
+          throw new Error("登录状态已失效，请重新登录后再试");
+        }
+        return refreshedData.session.access_token;
+      };
+
+      const invokeRequest = async (accessToken: string) => {
+        invokeBody.access_token = accessToken;
+        const response = await fetch(INVOKE_MODEL_API_URL, {
+          method: "POST",
           headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${accessToken}`,
           },
+          body: JSON.stringify(invokeBody),
         });
 
-      const { data: currentSessionData, error: currentSessionError } = await supabase.auth.getSession();
-      if (currentSessionError) {
-        throw currentSessionError;
-      }
-
-      let accessToken = currentSessionData.session?.access_token;
-      if (!accessToken) {
-        const { data: refreshedData, error: refreshedError } = await supabase.auth.refreshSession();
-        if (refreshedError || !refreshedData.session?.access_token) {
-          await supabase.auth.signOut();
-          throw new Error("登录状态已失效，请重新登录后再试");
-        }
-        accessToken = refreshedData.session.access_token;
-      }
-
-      let { data, error } = await invokeWithToken(accessToken);
-
-      if (error) {
-        const firstErrorMessage = await getDetailedErrorMessage(error);
-        const shouldRetryByRefresh = /登录状态已失效|invalid jwt|unauthorized/i.test(firstErrorMessage);
-
-        if (!shouldRetryByRefresh) {
-          throw new Error(firstErrorMessage);
+        let parsedBody: unknown = null;
+        try {
+          parsedBody = await response.json();
+        } catch {
+          parsedBody = null;
         }
 
+        return { response, parsedBody };
+      };
+
+      const accessToken = await getAccessTokenOrThrow();
+      let { response, parsedBody } = await invokeRequest(accessToken);
+
+      if (response.status === 401) {
         const { data: refreshedData, error: refreshedError } = await supabase.auth.refreshSession();
         if (refreshedError || !refreshedData.session?.access_token) {
           await supabase.auth.signOut();
           throw new Error("登录状态已失效，请重新登录后再试");
         }
 
-        const retryResult = await invokeWithToken(refreshedData.session.access_token);
-        data = retryResult.data;
-        error = retryResult.error;
+        const retry = await invokeRequest(refreshedData.session.access_token);
+        response = retry.response;
+        parsedBody = retry.parsedBody;
 
-        if (error) {
-          throw new Error(await getDetailedErrorMessage(error));
+        if (response.status === 401) {
+          await supabase.auth.signOut();
+          throw new Error("登录状态已失效，请重新登录后再试");
         }
+      }
+
+      if (!response.ok) {
+        const detailed = readApiErrorMessage(parsedBody);
+        if (/invalid jwt|unauthorized/i.test(detailed)) {
+          await supabase.auth.signOut();
+          throw new Error("登录状态已失效，请重新登录后再试");
+        }
+        throw new Error(detailed || `HTTP ${response.status}`);
       }
 
       return {
         nextMessages,
         nextModelList,
-        data: (data ?? {}) as InvokeResult,
+        data: (parsedBody ?? {}) as InvokeResult,
       };
     },
     onSuccess: ({ nextMessages, nextModelList, data }) => {
@@ -586,105 +640,131 @@ export default function ApiCalls() {
 
             <div className="space-y-1">
               <Label>{t("apiCalls.currentModel")}</Label>
-              <Input value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} placeholder={selectedTemplate.defaultModel} />
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("apiCalls.selectModel")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {modelList.map((model) => (
+                    <SelectItem key={model} value={model}>
+                      {model}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center justify-between rounded border p-2">
-                <Label>{t("apiCalls.legacyFormat")}</Label>
-                <Switch checked={useOpenAiCompatible} onCheckedChange={setUseOpenAiCompatible} />
-              </div>
+            <div className="grid gap-2 md:grid-cols-2">
               <div className="space-y-1">
                 <Label>{t("apiCalls.contextWindowSize")}</Label>
                 <Input value={String(selectedTemplate.contextWindowSize)} readOnly />
               </div>
-            </div>
-
-            <div className="flex items-center justify-between rounded border p-2">
-              <Label>{t("apiCalls.enableStreaming")}</Label>
-              <Switch checked={streamEnabled} onCheckedChange={setStreamEnabled} />
-            </div>
-
-            <div className="flex items-center justify-between rounded border p-2">
-              <Label>{t("apiCalls.includeMaxOutputTokens")}</Label>
-              <Switch checked={includeMaxOutputTokens} onCheckedChange={setIncludeMaxOutputTokens} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label>{t("apiCalls.maxOutputTokens")}</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={String(maxOutputTokens)}
-                  onChange={(e) => setMaxOutputTokens(Math.max(1, Number(e.target.value) || selectedTemplate.maxOutputTokens))}
-                  disabled={!includeMaxOutputTokens}
-                />
-              </div>
-              {selectedTemplate.reasoningMode === "effort" ? (
-                <div className="space-y-1">
-                  <Label>{t("apiCalls.reasoningEffort")}</Label>
-                  <Select value={reasoningEffort} onValueChange={(value) => setReasoningEffort(value as "low" | "medium" | "high")}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between rounded border p-2">
-                  <Label>{t("apiCalls.enableThinking")}</Label>
-                  <Switch checked={thinkingEnabled} onCheckedChange={setThinkingEnabled} />
-                </div>
-              )}
-            </div>
-
-            {selectedTemplate.supportsTemperature && (
-              <div className="space-y-1">
-                <Label>{t("apiCalls.temperature")}</Label>
-                <Input
-                  type="number"
-                  step={0.1}
-                  min={0}
-                  max={2}
-                  value={String(temperature)}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    if (!Number.isFinite(value)) return;
-                    setTemperature(Math.max(0, Math.min(2, value)));
-                  }}
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>{t("apiCalls.savedModels")}</Label>
-              <div className="flex flex-wrap gap-2">
-                {modelList.map((model) => (
-                  <Button
-                    key={model}
-                    type="button"
-                    size="sm"
-                    variant={model === selectedModel ? "default" : "outline"}
-                    onClick={() => setSelectedModel(model)}
-                  >
-                    {model}
+                <Label>{t("apiCalls.newModel")}</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={modelDraft}
+                    onChange={(e) => setModelDraft(e.target.value)}
+                    placeholder={t("apiCalls.newModel")}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addModel();
+                      }
+                    }}
+                  />
+                  <Button type="button" variant="outline" onClick={addModel} className="whitespace-nowrap">
+                    <Plus className="mr-1 h-4 w-4" />
+                    {t("apiCalls.addModel")}
                   </Button>
-                ))}
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Input value={modelDraft} onChange={(e) => setModelDraft(e.target.value)} placeholder={t("apiCalls.newModel")} />
-              <Button type="button" variant="outline" onClick={addModel}>
-                <Plus className="mr-1 h-4 w-4" />
-                {t("apiCalls.addModel")}
-              </Button>
-            </div>
+            {isBaishanVendor ? (
+              <div className="rounded border bg-muted/30 p-2 text-xs text-muted-foreground">
+                {t("apiCalls.simpleVendorHint")}
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-2 md:grid-cols-2">
+                  <div className="flex items-center justify-between rounded border px-3 py-2">
+                    <Label className="text-sm">{t("apiCalls.legacyFormat")}</Label>
+                    <Switch checked={useOpenAiCompatible} onCheckedChange={setUseOpenAiCompatible} />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded border px-3 py-2">
+                    <Label className="text-sm">{t("apiCalls.enableStreaming")}</Label>
+                    <Switch checked={streamEnabled} onCheckedChange={setStreamEnabled} />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded border px-3 py-2">
+                    <Label className="text-sm">{t("apiCalls.includeMaxOutputTokens")}</Label>
+                    <Switch checked={includeMaxOutputTokens} onCheckedChange={setIncludeMaxOutputTokens} />
+                  </div>
+
+                  {selectedTemplate.reasoningMode === "thinking" && (
+                    <div className="flex items-center justify-between rounded border px-3 py-2">
+                      <Label className="text-sm">{t("apiCalls.enableThinking")}</Label>
+                      <Switch checked={thinkingEnabled} onCheckedChange={setThinkingEnabled} />
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className={`grid gap-2 ${
+                    selectedTemplate.reasoningMode === "effort" && selectedTemplate.supportsTemperature
+                      ? "md:grid-cols-3"
+                      : "md:grid-cols-2"
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <Label>{t("apiCalls.maxOutputTokens")}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={String(maxOutputTokens)}
+                      onChange={(e) => setMaxOutputTokens(Math.max(1, Number(e.target.value) || selectedTemplate.maxOutputTokens))}
+                      disabled={!includeMaxOutputTokens}
+                    />
+                  </div>
+
+                  {selectedTemplate.reasoningMode === "effort" && (
+                    <div className="space-y-1">
+                      <Label>{t("apiCalls.reasoningEffort")}</Label>
+                      <Select value={reasoningEffort} onValueChange={(value) => setReasoningEffort(value as "low" | "medium" | "high")}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {selectedTemplate.supportsTemperature && (
+                    <div className="space-y-1">
+                      <Label>{t("apiCalls.temperature")}</Label>
+                      <Input
+                        type="number"
+                        step={0.1}
+                        min={0}
+                        max={2}
+                        value={String(temperature)}
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          if (!Number.isFinite(value)) return;
+                          setTemperature(Math.max(0, Math.min(2, value)));
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
             <Button onClick={() => saveConfig.mutate()} disabled={saveConfig.isPending}>
               {saveConfig.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

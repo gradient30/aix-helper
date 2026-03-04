@@ -304,3 +304,35 @@ export function normalizeApiKey(value: string): string {
   normalized = normalized.replace(/^bearer\s+/i, "");
   return normalized.trim();
 }
+
+type ResolveConversationScopeArgs = {
+  selectedVendorId: string;
+  selectedProviderId: string;
+  selectedProviderObjectId: string;
+  hasProviderCandidates: boolean;
+  lastScope: string;
+};
+
+export function resolveConversationScope({
+  selectedVendorId,
+  selectedProviderId,
+  selectedProviderObjectId,
+  hasProviderCandidates,
+  lastScope,
+}: ResolveConversationScopeArgs): string {
+  if (!hasProviderCandidates) {
+    return `${selectedVendorId}:new`;
+  }
+
+  const providerIdFromState = selectedProviderObjectId.trim() || selectedProviderId.trim();
+  if (providerIdFromState) {
+    return `${selectedVendorId}:${providerIdFromState}`;
+  }
+
+  const [lastVendor = "", lastProvider = ""] = lastScope.split(":", 2);
+  if (lastVendor === selectedVendorId && lastProvider && lastProvider !== "new") {
+    return `${selectedVendorId}:${lastProvider}`;
+  }
+
+  return `${selectedVendorId}:new`;
+}

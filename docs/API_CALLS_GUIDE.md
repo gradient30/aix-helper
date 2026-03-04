@@ -47,7 +47,8 @@
    - `supabase functions deploy invoke-model-api`
 3. 确保 `supabase/config.toml` 中开启：
    - `[functions.invoke-model-api]`
-   - `verify_jwt = true`
+   - `verify_jwt = false`
+   - 说明：函数内部做 JWT 校验（header/body 双通道取 token），降低代理链路导致的 `Invalid JWT` 风险。
 
 ## 8. 验收清单（研发/产品/用户联合）
 1. 白山模板可一键创建并保存。
@@ -59,6 +60,19 @@
 7. 历史可写入、可回填；单条响应快照不超过 20KB。
 8. 历史默认保留 30 天，可通过按钮清理过期记录。
 9. 未登录请求函数返回 401；越权 provider 返回 403/404。
+
+## 11. 401 与 CORS 问题排查顺序（强制）
+1. 先做 `OPTIONS` 预检连通性检查，再看 POST。
+2. `OPTIONS` 非 200（尤其 `503 BOOT_ERROR`）时，先修函数启动，不要先改 CORS。
+3. `OPTIONS`=200 但 POST=401 时，优先排查本地代理/请求拦截插件是否改写 JWT。
+4. 重新登录刷新会话后再测（确保带最新 access token）。
+5. 回归标准：
+   - POST `200`
+   - `normalized.text` 有值
+   - 聊天窗口显示问答内容。
+
+详细案例请参考：
+- `docs/INCIDENT_2026-03-04_INVOKE_MODEL_API_401.md`
 
 ## 9. 当前版本边界（首版）
 1. 仅实现非流式调用（`stream=false`）。

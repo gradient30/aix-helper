@@ -1,8 +1,8 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const RESPONSE_SNAPSHOT_LIMIT = 20 * 1024;
 const REQUEST_TIMEOUT_MS = 30000;
+
+const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").trim().replace(/\/+$/, "");
+const SUPABASE_ANON_KEY = (Deno.env.get("SUPABASE_ANON_KEY") || "").trim();
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "")
   .split(",")
@@ -35,6 +35,8 @@ function getCorsHeaders(req: Request) {
     "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Max-Age": "86400",
   };
 }
 
@@ -184,51 +186,120 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   });
 }
 
-serve(async (req) => {
+function supabaseAuthHeaders(token: string, extraHeaders?: Record<string, string>): Record<string, string> {
+  return {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${token}`,
+    ...(extraHeaders || {}),
+  };
+}
+
+async function fetchSupabaseUser(token: string): Promise<{ id: string } | null> {
+  const response = await withTimeout(
+    fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: "GET",
+      headers: supabaseAuthHeaders(token),
+    }),
+    REQUEST_TIMEOUT_MS,
+  );
+
+  if (!response.ok) return null;
+  const data = await response.json().catch(() => null);
+  if (!data || typeof data !== "object" || typeof (data as Record<string, unknown>).id !== "string") {
+    return null;
+  }
+  return { id: (data as Record<string, string>).id };
+}
+
+async function fetchProvider(providerId: string, token: string): Promise<ProviderConfig | null> {
+  const query = new URLSearchParams({
+    id: `eq.${providerId}`,
+    select: "id,user_id,base_url,api_key,auth_mode,auth_header_name,enabled,defaults",
+  }).toString();
+
+  const response = await withTimeout(
+    fetch(`${SUPABASE_URL}/rest/v1/api_call_providers?${query}`, {
+      method: "GET",
+      headers: supabaseAuthHeaders(token),
+    }),
+    REQUEST_TIMEOUT_MS,
+  );
+
+  if (!response.ok) return null;
+  const data = await response.json().catch(() => null);
+  if (!Array.isArray(data) || data.length === 0 || !isPlainObject(data[0])) {
+    return null;
+  }
+  return data[0] as ProviderConfig;
+}
+
+async function insertHistory(token: string, record: JsonObject): Promise<void> {
+  const response = await withTimeout(
+    fetch(`${SUPABASE_URL}/rest/v1/api_call_history`, {
+      method: "POST",
+      headers: supabaseAuthHeaders(token, {
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      }),
+      body: JSON.stringify(record),
+    }),
+    REQUEST_TIMEOUT_MS,
+  );
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    console.error("api_call_history insert failed:", text);
+  }
+}
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: getCorsHeaders(req) });
+    return new Response(null, { status: 200, headers: getCorsHeaders(req) });
+  }
+
+  if (req.method !== "POST") {
+    return jsonResponse(req, 405, { error: "Method not allowed" });
+  }
+
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return jsonResponse(req, 500, { error: "Supabase environment is not configured" });
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    const requestBody = await req.json();
+    const authHeader = req.headers.get("Authorization") || "";
+    const tokenFromHeader = authHeader.startsWith("Bearer ")
+      ? authHeader.replace("Bearer ", "").trim()
+      : "";
+    const tokenFromBody = typeof requestBody?.access_token === "string"
+      ? requestBody.access_token.trim()
+      : "";
+    const token = tokenFromHeader || tokenFromBody;
+
+    if (!token) {
       return jsonResponse(req, 401, { error: "Unauthorized" });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
+    const user = await fetchSupabaseUser(token);
+    if (!user?.id) {
       return jsonResponse(req, 401, { error: "Unauthorized" });
     }
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
-    const body = await req.json();
-    const providerId = typeof body?.provider_id === "string" ? body.provider_id : "";
-    const mode = body?.mode === "custom" ? "custom" : "chat";
-    const saveHistory = body?.save_history !== false;
-    const payload = isPlainObject(body?.payload) ? body.payload : {};
+    const providerId = typeof requestBody?.provider_id === "string" ? requestBody.provider_id : "";
+    const mode = requestBody?.mode === "custom" ? "custom" : "chat";
+    const saveHistory = requestBody?.save_history !== false;
+    const payload = isPlainObject(requestBody?.payload) ? requestBody.payload : {};
 
     if (!providerId) {
       return jsonResponse(req, 400, { error: "provider_id is required" });
     }
 
-    const { data: provider, error: providerError } = await supabase
-      .from("api_call_providers")
-      .select("id,user_id,base_url,api_key,auth_mode,auth_header_name,enabled,defaults")
-      .eq("id", providerId)
-      .single();
-
-    if (providerError || !provider) {
+    const providerConfig = await fetchProvider(providerId, token);
+    if (!providerConfig) {
       return jsonResponse(req, 404, { error: "Provider not found" });
     }
 
-    const providerConfig = provider as ProviderConfig;
     if (providerConfig.user_id !== userId) {
       return jsonResponse(req, 403, { error: "Forbidden provider access" });
     }
@@ -248,11 +319,10 @@ serve(async (req) => {
     let requestHeaders: Record<string, string> = {};
     let requestMethod = "POST";
     let requestUrl = "";
-    let requestBody: unknown;
+    let requestBodyPayload: unknown;
     let selectedModel: string | null = null;
 
     if (mode === "chat") {
-      // Chat mode should forward the user payload as-is to avoid accidental provider incompatibilities.
       const defaultHeaders = toStringMap(defaultsObject.headers);
       const payloadHeaders = toStringMap(payloadObject.headers);
       requestHeaders = { ...defaultHeaders, ...payloadHeaders };
@@ -263,16 +333,16 @@ serve(async (req) => {
       requestUrl = buildRequestUrl(providerConfig.base_url, pathFromPayload || pathFromDefaults || "/v1/chat/completions");
 
       const { headers, method, path, ...chatPayload } = payloadObject;
-      requestBody = chatPayload;
+      requestBodyPayload = chatPayload;
       selectedModel = typeof chatPayload.model === "string" ? chatPayload.model : null;
     } else {
       const mergedPayload = applyDefaults(defaultsObject, payloadObject);
       requestHeaders = toStringMap(mergedPayload.headers);
       requestMethod = String(mergedPayload.method || "POST").toUpperCase();
       requestUrl = buildRequestUrl(providerConfig.base_url, String(mergedPayload.path || "/"));
-      requestBody = mergedPayload.body;
-      if (isPlainObject(requestBody) && typeof requestBody.model === "string") {
-        selectedModel = requestBody.model;
+      requestBodyPayload = mergedPayload.body;
+      if (isPlainObject(requestBodyPayload) && typeof requestBodyPayload.model === "string") {
+        selectedModel = requestBodyPayload.model;
       }
     }
 
@@ -299,8 +369,8 @@ serve(async (req) => {
     }
 
     if (
-      requestBody !== undefined &&
-      requestBody !== null &&
+      requestBodyPayload !== undefined &&
+      requestBodyPayload !== null &&
       !requestHeaders["Content-Type"] &&
       !requestHeaders["content-type"]
     ) {
@@ -315,11 +385,11 @@ serve(async (req) => {
         body:
           requestMethod === "GET" || requestMethod === "HEAD"
             ? undefined
-            : requestBody === undefined || requestBody === null
+            : requestBodyPayload === undefined || requestBodyPayload === null
               ? undefined
-              : typeof requestBody === "string"
-                ? requestBody
-                : JSON.stringify(requestBody),
+              : typeof requestBodyPayload === "string"
+                ? requestBodyPayload
+                : JSON.stringify(requestBodyPayload),
       }),
       REQUEST_TIMEOUT_MS,
     );
@@ -341,9 +411,9 @@ serve(async (req) => {
         method: requestMethod,
         url: requestUrl,
         headers: requestHeaders,
-        payload: requestBody,
+        payload: requestBodyPayload,
       });
-      const { error: historyError } = await supabase.from("api_call_history").insert({
+      await insertHistory(token, {
         user_id: userId,
         provider_id: providerId,
         request_mode: mode,
@@ -355,10 +425,6 @@ serve(async (req) => {
         response_snapshot: toSnapshot(parsedResponse),
         error_message: errorMessage,
       });
-
-      if (historyError) {
-        console.error("api_call_history insert failed:", historyError.message);
-      }
     }
 
     return jsonResponse(req, success ? 200 : upstreamResponse.status, {
@@ -377,3 +443,4 @@ serve(async (req) => {
     });
   }
 });
+

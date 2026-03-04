@@ -36,6 +36,7 @@
     "commit-37f2b3cb36b6a0713843d4df2d799293aa67a872",
     "commit-38d277b497def141c7281440e0c1fb6a1db8ecf0",
     "commit-3c577a9dfd49c503dc5b3521c1bf798ddbb2cb3e",
+    "commit-3de55085af950fdabb5d95088ad726b88704fcd6",
     "commit-3e81678e37ab9d084aef9e93f5252c3e3bfdb6f5",
     "commit-3ec6197b5d1d8f2690e09bc305accf6f7106c52b",
     "commit-43acefe60b49802b8201efd62c4d03582d51528d",
@@ -104,6 +105,7 @@
     "commit-c4b32e11a9609d5a7c215456beb45b2884965e27",
     "commit-c92a931c51c2cbe5851e2d1672c4ff51f4994014",
     "commit-cb7cdacfb575e5149c6c86e8384a80e7e46e66c1",
+    "commit-cba634fb525219122c742aa8aa9e92a82592b7e6",
     "commit-cf4f4986d3f7236adb24518942008f8e8938a3e1",
     "commit-d1f6271608d5ad02eb275f14ad7e722a64bebb9b",
     "commit-d326b1f63b32996b98922aebf7100c88e1ff6331",
@@ -130,7 +132,7 @@
     "commit-ff8578812d78b79c69ae2a36e45a0c77bfd21c2d"
   ],
   "next_sequence": {
-    "PROG": 87
+    "PROG": 89
   },
   "days": {
     "2026-02-27": {
@@ -1445,6 +1447,56 @@
       "next_steps": [],
       "meta": {
         "created_at": "2026-03-02T18:28:02+08:00"
+      }
+    },
+    "2026-03-03": {
+      "plans": [],
+      "progress_updates": [
+        {
+          "item_id": "PROG-0087",
+          "fingerprint": "95427ff38e51e2514051e68dd55d68fa29ca9ec7",
+          "title": "chore(progress): 同步今日日报与变更总结增量数据",
+          "detail": "optimization | commit 3de5508",
+          "status": "done",
+          "progress": "100%",
+          "priority": "P3",
+          "owner": "gradient30",
+          "component": "docs",
+          "due_date": "",
+          "updated_at": "2026-03-03T09:10:39+08:00",
+          "source_id": "commit-3de55085af950fdabb5d95088ad726b88704fcd6"
+        }
+      ],
+      "blockers": [],
+      "decisions": [],
+      "next_steps": [],
+      "meta": {
+        "created_at": "2026-03-03T13:59:16+08:00"
+      }
+    },
+    "2026-03-04": {
+      "plans": [],
+      "progress_updates": [
+        {
+          "item_id": "PROG-0088",
+          "fingerprint": "1f13106b874b3257aae79013a60827012817f11e",
+          "title": "feat(api-calls): 新增接口调用页面与多厂商代理调用能力",
+          "detail": "feature | commit cba634f",
+          "status": "done",
+          "progress": "100%",
+          "priority": "P2",
+          "owner": "gradient30",
+          "component": "src",
+          "due_date": "",
+          "updated_at": "2026-03-04T13:23:32+08:00",
+          "source_id": "commit-cba634fb525219122c742aa8aa9e92a82592b7e6"
+        }
+      ],
+      "blockers": [],
+      "decisions": [],
+      "next_steps": [],
+      "meta": {
+        "created_at": "2026-03-04T15:21:43+08:00"
       }
     }
   }
