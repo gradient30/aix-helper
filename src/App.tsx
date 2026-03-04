@@ -19,6 +19,7 @@ import CliGuide from "./pages/CliGuide";
 import SkillsGuide from "./pages/SkillsGuide";
 import SetupGuide from "./pages/SetupGuide";
 import AiGlossary from "./pages/AiGlossary";
+import ApiCalls from "./pages/ApiCalls";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const App = () => (
                       <Route path="/skills-guide" element={<SkillsGuide />} />
                       <Route path="/setup-guide" element={<SetupGuide />} />
                       <Route path="/ai-glossary" element={<AiGlossary />} />
+                      <Route path="/api-calls" element={<ApiCalls />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>

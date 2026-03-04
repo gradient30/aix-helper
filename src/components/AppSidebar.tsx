@@ -1,4 +1,4 @@
-import { Zap, Server, BookOpen, FileText, Download, LogOut, User, Terminal, GraduationCap, Monitor, Brain } from "lucide-react";
+import { Zap, Server, BookOpen, FileText, Download, LogOut, User, Terminal, GraduationCap, Monitor, Brain, AppWindow } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +25,7 @@ const navItems = [
   { titleKey: "nav.mcpServers", url: "/mcp", icon: Server },
   { titleKey: "nav.skills", url: "/skills", icon: BookOpen },
   { titleKey: "nav.prompts", url: "/prompts", icon: FileText },
+  { titleKey: "nav.apiCalls", url: "/api-calls", icon: AppWindow },
   { titleKey: "nav.export", url: "/export", icon: Download },
   { titleKey: "nav.cliGuide", url: "/cli-guide", icon: Terminal },
   { titleKey: "nav.skillsGuide", url: "/skills-guide", icon: GraduationCap },

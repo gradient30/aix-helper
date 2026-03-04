@@ -130,3 +130,62 @@ npm run ci:gate
 
 1. 本仓库已按“自有 Supabase”口径维护，不再建议使用历史 Lovable 托管后端配置。
 2. 若仅保留 Cloudflare 正式发布，可将 GitHub Pages 视为备用通道，而不是主流量入口。
+
+## 11. 新增「接口调用」功能激活步骤（本次需求）
+
+> 新功能路由：`/api-calls`。  
+> 若只推前端代码、不执行下面步骤，页面可打开但无法完整使用。
+
+### 11.1 Supabase 数据库迁移（必须）
+
+在项目根目录执行：
+
+```bash
+supabase db push
+```
+
+确认包含 migration：
+
+- `supabase/migrations/20260303121000_add_api_calls_tables.sql`
+
+成功标志：
+
+1. 输出 `Applying migration 20260303121000_add_api_calls_tables.sql...`
+2. 输出 `Finished supabase db push.`
+
+### 11.2 Supabase Edge Function 部署（必须）
+
+在项目根目录执行：
+
+```bash
+supabase functions deploy invoke-model-api
+```
+
+成功标志：
+
+1. 函数部署成功
+2. `supabase/config.toml` 中存在：
+   - `[functions.invoke-model-api]`
+   - `verify_jwt = true`
+
+### 11.3 前端部署（必须）
+
+1. 提交并推送 `main`。
+2. 等待工作流：
+   1. `Quality Gate` 通过
+   2. `Deploy to Cloudflare Pages` 成功
+   3. `Deploy to GitHub Pages` 成功（备用）
+
+### 11.4 功能验收（上线后 5 分钟）
+
+1. 打开 `https://helper.996fb.cn/api-calls`。
+2. 选择白山模板，新建配置，填入 API Key 并保存。
+3. 发送一次 Chat 请求，右侧看到 `状态码 + 耗时 + 结果`。
+4. 历史中能看到记录，并可点击回填。
+5. 在 `custom` 模式下可编辑 `method/path/headers/body` 并成功调用。
+
+### 11.5 安全核查（上线后必须）
+
+1. 浏览器 Network 中请求目标应为 Supabase Function（不是前端直连厂商域名）。
+2. 历史快照中不应出现明文 `Authorization`/`api_key`/`token`。
+3. API Key 不应被写入前端日志或报错弹窗。

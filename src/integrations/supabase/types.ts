@@ -14,6 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_call_history: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          latency_ms: number | null
+          provider_id: string
+          request_mode: string
+          request_snapshot: Json
+          response_snapshot: string | null
+          response_status: number | null
+          selected_model: string | null
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          provider_id: string
+          request_mode?: string
+          request_snapshot?: Json
+          response_snapshot?: string | null
+          response_status?: number | null
+          selected_model?: string | null
+          success?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          provider_id?: string
+          request_mode?: string
+          request_snapshot?: Json
+          response_snapshot?: string | null
+          response_status?: number | null
+          selected_model?: string | null
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_call_history_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "api_call_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_call_providers: {
+        Row: {
+          api_key: string
+          auth_header_name: string | null
+          auth_mode: string
+          base_url: string
+          created_at: string
+          defaults: Json
+          enabled: boolean
+          favorite_models: Json
+          id: string
+          name: string
+          request_schema: Json
+          sample_snippets: Json
+          sort_order: number
+          updated_at: string
+          user_id: string
+          vendor_id: string
+        }
+        Insert: {
+          api_key: string
+          auth_header_name?: string | null
+          auth_mode?: string
+          base_url: string
+          created_at?: string
+          defaults?: Json
+          enabled?: boolean
+          favorite_models?: Json
+          id?: string
+          name: string
+          request_schema?: Json
+          sample_snippets?: Json
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+          vendor_id?: string
+        }
+        Update: {
+          api_key?: string
+          auth_header_name?: string | null
+          auth_mode?: string
+          base_url?: string
+          created_at?: string
+          defaults?: Json
+          enabled?: boolean
+          favorite_models?: Json
+          id?: string
+          name?: string
+          request_schema?: Json
+          sample_snippets?: Json
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       mcp_servers: {
         Row: {
           app_bindings: Json | null
