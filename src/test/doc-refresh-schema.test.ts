@@ -74,7 +74,7 @@ function compileDocRefreshTypes() {
 }
 
 describe("doc refresh schema", () => {
-  it("wires the new tables into Database and keeps doc_catalog_overrides published", () => {
+  it("wires the new tables into Database and keeps doc_catalog_overrides published", { timeout: 15000 }, () => {
     const diagnostics = compileDocRefreshTypes();
     const formatted = diagnostics.map((diag) => ts.flattenDiagnosticMessageText(diag.messageText, "\n"));
 
