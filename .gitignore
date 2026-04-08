@@ -36,6 +36,7 @@ test-results/
 .cache/
 .turbo/
 .tmp/
+/.worktrees/
 
 # Supabase local temp/state
 .supabase/
