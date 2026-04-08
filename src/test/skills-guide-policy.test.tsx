@@ -9,6 +9,63 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
+vi.mock("@/features/docs-refresh/hooks", () => ({
+  useDocRefreshSettings: () => ({
+    data: {
+      firecrawlConfigured: false,
+      firecrawlKeyMask: null,
+      firecrawlLastVerifiedAt: null,
+    },
+    isLoading: false,
+  }),
+  useLatestDocRefreshRun: () => ({
+    data: {
+      runId: null,
+      scope: "skills",
+      pageRoute: "/skills-guide",
+      sourceMode: "official_fetch",
+      status: "idle",
+      startedAt: null,
+      finishedAt: null,
+      errorMessage: null,
+      summary: {
+        totalSources: 0,
+        successfulSnapshots: 0,
+        failedSources: 0,
+        pending: 0,
+        applied: 0,
+        dismissed: 0,
+      },
+    },
+    isLoading: false,
+  }),
+  useDocRefreshDiffItems: () => ({
+    data: [],
+    isLoading: false,
+  }),
+  useTriggerDocRefresh: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useSaveDocRefreshSettings: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useClearDocRefreshSettings: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useApplyDocRefreshDecision: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useDismissDocRefreshDecision: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}));
+
 describe("SkillsGuide policy", () => {
   it("uses codex .agents/skills path", () => {
     const codex = SKILLS_GUIDE_TOOLS.find((tool) => tool.id === "codex");

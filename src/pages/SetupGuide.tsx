@@ -2,12 +2,14 @@
 import { useTranslation } from "react-i18next";
 import { ChevronsUpDown, Copy, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DocsRefreshPanel } from "@/components/docs-refresh/DocsRefreshPanel";
+import { VendorGuideTabs } from "@/components/docs-refresh/VendorGuideTabs";
 import { SETUP_BADGE_LABELS, SETUP_GUIDE_TOOLS } from "@/config/docs-catalog/setup";
 import type { GuideContentItem, SetupGuideTool } from "@/config/docs-catalog/types";
 
@@ -157,12 +159,15 @@ export default function SetupGuide() {
         <p className="text-sm text-muted-foreground mt-1">{t("setupGuide.subtitle")}</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSearch(""); }}>
-        <TabsList className="grid w-full grid-cols-3 h-auto p-1 gap-1">
-          {SETUP_GUIDE_TOOLS.map((tool) => (
-            <TabsTrigger key={tool.id} value={tool.id} className="capitalize text-sm py-2.5">{tool.name}</TabsTrigger>
-          ))}
-        </TabsList>
+      <VendorGuideTabs
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value);
+          setSearch("");
+        }}
+        tools={SETUP_GUIDE_TOOLS}
+      >
+        <DocsRefreshPanel scope="setup" pageRoute="/setup-guide" vendorId={activeTab} />
 
         {filteredTools.map((tool) => (
           <TabsContent key={tool.id} value={tool.id} className="mt-4 space-y-4">
@@ -217,7 +222,7 @@ export default function SetupGuide() {
             )}
           </TabsContent>
         ))}
-      </Tabs>
+      </VendorGuideTabs>
     </div>
   );
 }

@@ -2,11 +2,13 @@
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight, ChevronsUpDown, ExternalLink, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { DocsRefreshPanel } from "@/components/docs-refresh/DocsRefreshPanel";
+import { VendorGuideTabs } from "@/components/docs-refresh/VendorGuideTabs";
 import { CLI_BADGE_LABELS, CLI_GUIDE_TOOLS } from "@/config/docs-catalog/cli";
 import type { CliGuideTool, GuideCommand } from "@/config/docs-catalog/types";
 
@@ -140,14 +142,15 @@ export default function CliGuide() {
         <p className="text-sm text-muted-foreground mt-1">{t("cliGuide.subtitle")}</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSearch(""); }}>
-        <TabsList className="grid w-full grid-cols-3 h-auto p-1 gap-1">
-          {CLI_GUIDE_TOOLS.map((tool) => (
-            <TabsTrigger key={tool.id} value={tool.id} className="capitalize text-sm py-2.5">
-              {tool.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <VendorGuideTabs
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value);
+          setSearch("");
+        }}
+        tools={CLI_GUIDE_TOOLS}
+      >
+        <DocsRefreshPanel scope="cli" pageRoute="/cli-guide" vendorId={activeTab} />
 
         {filteredTools.map((tool) => (
           <TabsContent key={tool.id} value={tool.id} className="mt-4 space-y-4">
@@ -211,7 +214,7 @@ export default function CliGuide() {
             )}
           </TabsContent>
         ))}
-      </Tabs>
+      </VendorGuideTabs>
     </div>
   );
 }

@@ -46,3 +46,53 @@ export type DocRefreshDeleteOverride = {
 export type DocRefreshOverride<TPayload extends { entityKey: string } = { entityKey: string }> =
   | DocRefreshUpsertOverride<TPayload>
   | DocRefreshDeleteOverride;
+
+export type DocRefreshScope = "cli" | "skills" | "setup" | "help";
+
+export type DocRefreshSourceMode = "official_fetch" | "firecrawl_manual";
+
+export type DocRefreshRunStatus = "idle" | "running" | "success" | "partial_success" | "failed";
+
+export type DocRefreshReviewAction = "replace_all" | "replace_similar" | "delete_old" | "skip";
+
+export type DocRefreshReviewStatus = "pending" | "applied" | "dismissed";
+
+export type DocRefreshDiffPayload = Record<string, unknown> | null;
+
+export type DocRefreshDiffItemView = {
+  id: string;
+  runId: string;
+  scope: DocRefreshScope;
+  vendorId: string;
+  entityKey: string;
+  diffKind: DocRefreshDiffKind;
+  reviewAction: DocRefreshReviewAction;
+  reviewStatus: DocRefreshReviewStatus;
+  similarityScore: number | null;
+  baselinePayload: DocRefreshDiffPayload;
+  candidatePayload: DocRefreshDiffPayload;
+  similarCandidates: Record<string, unknown>[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DocRefreshDiffFilter = "all" | DocRefreshDiffKind | "pending" | "reviewed";
+
+export type DocRefreshRunView = {
+  runId: string | null;
+  scope: DocRefreshScope;
+  pageRoute: string;
+  sourceMode: DocRefreshSourceMode | null;
+  status: DocRefreshRunStatus;
+  startedAt: string | null;
+  finishedAt: string | null;
+  errorMessage: string | null;
+  summary: {
+    totalSources: number;
+    successfulSnapshots: number;
+    failedSources: number;
+    pending: number;
+    applied: number;
+    dismissed: number;
+  };
+};

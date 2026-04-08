@@ -25,7 +25,10 @@ export type GuideCommandBadge =
   | "cli"
   | "interactive"
   | "at"
-  | "shell";
+  | "shell"
+  | "setting"
+  | "workflow"
+  | "tip";
 
 export type GuideItemBadge =
   | "path"
@@ -39,7 +42,10 @@ export type GuideItemBadge =
   | "scenario"
   | "optimize"
   | "debug"
-  | "faq";
+  | "faq"
+  | "setting"
+  | "workflow"
+  | "tip";
 
 export type GuideCommand = {
   command: string;
@@ -49,6 +55,10 @@ export type GuideCommand = {
   subcommands?: { command: string; description: string }[];
   support_level: GuideSupportLevel;
   verification: GuideVerificationMeta;
+  examples?: string[];
+  aliases?: string[];
+  sourceUrl?: string;
+  communityTips?: string[];
 };
 
 export type GuideGroup<TItem> = {
@@ -59,7 +69,7 @@ export type GuideGroup<TItem> = {
 };
 
 export type CliGuideTool = {
-  id: "claude" | "codex" | "gemini";
+  id: "claude" | "codex" | "gemini" | "opencode";
   name: string;
   official_url: string;
   support_level: GuideSupportLevel;
@@ -75,10 +85,12 @@ export type GuideContentItem = {
   table?: { headers: string[]; rows: string[][] };
   support_level: GuideSupportLevel;
   verification: GuideVerificationMeta;
+  sourceUrl?: string;
+  relatedCommands?: string[];
 };
 
 export type SkillsGuideTool = {
-  id: "claude" | "codex" | "gemini";
+  id: "claude" | "codex" | "gemini" | "opencode";
   name: string;
   official_url: string;
   support_level: GuideSupportLevel;
@@ -88,7 +100,7 @@ export type SkillsGuideTool = {
 };
 
 export type SetupGuideTool = {
-  id: "claude" | "codex" | "gemini";
+  id: "claude" | "codex" | "gemini" | "opencode";
   name: string;
   official_url: string;
   support_level: GuideSupportLevel;

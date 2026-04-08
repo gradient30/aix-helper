@@ -1,7 +1,7 @@
-import { Bug, CheckCircle, Download, HelpCircle, Play, Settings, Shield } from "lucide-react";
+import { Bug, CheckCircle, Download, HelpCircle, Play, Settings, Shield, Zap } from "lucide-react";
 import type { GuideVerificationMeta, SetupGuideTool } from "./types";
 
-const VERIFIED_AT = "2026-02-23";
+const VERIFIED_AT = "2026-04-07";
 
 function meta(
   source_url: string,
@@ -21,6 +21,10 @@ function meta(
 const claudeOverview = "https://docs.anthropic.com/en/docs/claude-code/overview";
 const claudeSettings = "https://docs.anthropic.com/en/docs/claude-code/settings";
 const claudeCliUsage = "https://docs.anthropic.com/en/docs/claude-code/cli-usage";
+const claudeMcp = "https://docs.anthropic.com/en/docs/claude-code/mcp";
+const claudePlugins = "https://docs.anthropic.com/en/docs/claude-code/plugins";
+const claudeTerminalConfig = "https://docs.anthropic.com/en/docs/claude-code/terminal-config";
+const claudeTroubleshooting = "https://docs.anthropic.com/en/docs/claude-code/troubleshooting";
 
 const codexCli = "https://developers.openai.com/codex/cli";
 const codexConfig = "https://developers.openai.com/codex/cli/reference";
@@ -30,8 +34,16 @@ const codexReference = "https://developers.openai.com/codex/cli/reference";
 const geminiRoot = "https://google-gemini.github.io/gemini-cli/";
 const geminiCommands = "https://google-gemini.github.io/gemini-cli/docs/cli/commands";
 const geminiConfig = "https://google-gemini.github.io/gemini-cli/docs/get-started/configuration";
+const geminiMcp = "https://google-gemini.github.io/gemini-cli/";
+
+const opencodeRoot = "https://opencode.ai";
+const opencodeInstall = "https://opencode.ai";
+const opencodeConfig = "https://opencode.ai";
 
 export const SETUP_GUIDE_TOOLS: SetupGuideTool[] = [
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Claude Code
+  // ═══════════════════════════════════════════════════════════════════════════
   {
     id: "claude",
     name: "Claude Code",
@@ -46,10 +58,18 @@ export const SETUP_GUIDE_TOOLS: SetupGuideTool[] = [
         items: [
           {
             title: "操作系统支持",
-            description: "请以官方安装文档为准确认当前支持平台。Windows、macOS、Linux 均有官方安装入口。",
+            description: "官方支持 macOS、Linux 和 Windows（含 WSL）。请确认系统版本满足最低要求。",
             badge: "prereq",
             support_level: "official",
             verification: meta(claudeOverview, "官方支持说明"),
+          },
+          {
+            title: "Node.js 与 npm",
+            description: "Claude Code 通过 npm 分发，需要 Node.js 环境。",
+            code: "node --version\nnpm --version",
+            badge: "prereq",
+            support_level: "official",
+            verification: meta(claudeOverview, "官方前置要求"),
           },
           {
             title: "Git（推荐）",
@@ -68,19 +88,27 @@ export const SETUP_GUIDE_TOOLS: SetupGuideTool[] = [
         items: [
           {
             title: "官方安装脚本",
-            description: "使用官方安装方式，确保后续升级路径一致。",
+            description: "使用官方安装脚本，自动处理依赖和路径配置。",
             code: "# macOS / Linux\ncurl -fsSL https://claude.ai/install.sh | bash",
             badge: "install",
             support_level: "official",
             verification: meta(claudeOverview, "官方安装方式"),
           },
           {
-            title: "启动 CLI",
-            description: "安装后在项目目录启动并完成登录流程。",
-            code: "claude",
+            title: "npm 安装",
+            description: "通过 npm 全局安装，适合已有 Node.js 环境的用户。",
+            code: "npm install -g @anthropic-ai/claude-code",
             badge: "install",
             support_level: "official",
-            verification: meta(claudeCliUsage, "官方启动流程"),
+            verification: meta(claudeOverview, "官方安装方式"),
+          },
+          {
+            title: "升级",
+            description: "使用官方命令升级到最新版本。",
+            code: "claude update",
+            badge: "install",
+            support_level: "official",
+            verification: meta(claudeCliUsage, "官方升级命令"),
           },
         ],
       },
@@ -91,7 +119,7 @@ export const SETUP_GUIDE_TOOLS: SetupGuideTool[] = [
         items: [
           {
             title: "settings.json",
-            description: "建议通过 settings.json 管理环境变量与默认行为。具体字段以官方文档为准。",
+            description: "通过 settings.json 管理环境变量与默认行为。",
             code: `{
   "env": {
     "ANTHROPIC_AUTH_TOKEN": "your-token"
@@ -104,9 +132,18 @@ export const SETUP_GUIDE_TOOLS: SetupGuideTool[] = [
           {
             title: "OAuth / API Key",
             description: "可使用官方登录流程或 API Key 认证，实际可用方式以账户权限为准。",
+            code: "claude auth login",
             badge: "config",
             support_level: "official",
             verification: meta(claudeOverview, "官方认证说明"),
+          },
+          {
+            title: "环境变量",
+            description: "ANTHROPIC_API_KEY 或 ANTHROPIC_AUTH_TOKEN 用于 API 认证。",
+            code: "export ANTHROPIC_API_KEY=\"your-api-key\"",
+            badge: "config",
+            support_level: "official",
+            verification: meta(claudeSettings, "官方环境变量"),
           },
         ],
       },
@@ -131,10 +168,127 @@ export const SETUP_GUIDE_TOOLS: SetupGuideTool[] = [
             support_level: "official",
             verification: meta(claudeCliUsage, "官方命令"),
           },
+          {
+            title: "诊断工具",
+            description: "运行完整诊断检查，验证安装和配置。",
+            code: "/doctor",
+            badge: "verify",
+            support_level: "official",
+            verification: meta(claudeTroubleshooting, "官方诊断命令"),
+          },
+        ],
+      },
+      {
+        category: "MCP 配置",
+        icon: Zap,
+        verification: meta(claudeMcp, "MCP 配置来自官方 MCP 文档。"),
+        items: [
+          {
+            title: "MCP 服务器设置",
+            description: "在 settings.json 中配置 MCP 服务器连接。",
+            code: `{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
+    }
+  }
+}`,
+            badge: "config",
+            support_level: "official",
+            verification: meta(claudeMcp, "官方 MCP 配置"),
+          },
+          {
+            title: "OAuth 认证",
+            description: "部分 MCP 服务器需要 OAuth 认证，通过 /mcp 命令管理。",
+            code: "/mcp",
+            badge: "command",
+            support_level: "official",
+            verification: meta(claudeMcp, "官方 MCP 命令"),
+          },
+        ],
+      },
+      {
+        category: "插件配置",
+        icon: Play,
+        verification: meta(claudePlugins, "插件配置来自官方 plugins 文档。"),
+        items: [
+          {
+            title: "安装插件",
+            description: "使用 /plugin 命令安装和管理插件。",
+            code: "/plugin install code-review@claude-plugins-official",
+            badge: "command",
+            support_level: "official",
+            verification: meta(claudePlugins, "官方插件命令"),
+          },
+          {
+            title: "重新加载",
+            description: "修改插件配置后重新加载。",
+            code: "/reload-plugins",
+            badge: "command",
+            support_level: "official",
+            verification: meta(claudePlugins, "官方命令"),
+          },
+        ],
+      },
+      {
+        category: "终端配置",
+        icon: Settings,
+        verification: meta(claudeTerminalConfig, "终端配置来自官方文档。"),
+        items: [
+          {
+            title: "终端快捷键",
+            description: "配置终端快捷键以快速访问常用功能。",
+            code: "/terminal-setup",
+            badge: "command",
+            support_level: "official",
+            verification: meta(claudeTerminalConfig, "官方命令"),
+          },
+          {
+            title: "状态行",
+            description: "自定义状态行显示内容。",
+            code: "/statusline",
+            badge: "command",
+            support_level: "official",
+            verification: meta("https://docs.anthropic.com/en/docs/claude-code/statusline", "官方命令"),
+          },
+        ],
+      },
+      {
+        category: "问题排查",
+        icon: Bug,
+        verification: meta(claudeTroubleshooting, "排查命令来自官方 troubleshooting 文档。"),
+        items: [
+          {
+            title: "诊断检查",
+            description: "运行 /doctor 进行完整诊断。",
+            code: "/doctor",
+            badge: "debug",
+            support_level: "official",
+            verification: meta(claudeTroubleshooting, "官方诊断命令"),
+          },
+          {
+            title: "常见问题",
+            description: "认证失败、网络问题、权限错误等常见问题请参考官方故障排查文档。",
+            badge: "faq",
+            support_level: "official",
+            verification: meta(claudeTroubleshooting, "官方排查文档"),
+          },
+          {
+            title: "提交反馈",
+            description: "遇到问题可通过 /feedback 提交报告。",
+            code: "/feedback",
+            badge: "command",
+            support_level: "official",
+            verification: meta(claudeTroubleshooting, "官方反馈命令"),
+          },
         ],
       },
     ],
   },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Codex CLI
+  // ═══════════════════════════════════════════════════════════════════════════
   {
     id: "codex",
     name: "Codex CLI",
@@ -162,6 +316,14 @@ export const SETUP_GUIDE_TOOLS: SetupGuideTool[] = [
             support_level: "official",
             verification: meta(codexWindows, "官方 Windows 指南"),
           },
+          {
+            title: "Git（推荐）",
+            description: "代码审查与版本管理场景建议安装 Git。",
+            code: "git --version",
+            badge: "prereq",
+            support_level: "official",
+            verification: meta(codexCli, "官方工作流建议"),
+          },
         ],
       },
       {
@@ -171,7 +333,7 @@ export const SETUP_GUIDE_TOOLS: SetupGuideTool[] = [
         items: [
           {
             title: "全局安装",
-            description: "安装 Codex CLI。",
+            description: "通过 npm 全局安装 Codex CLI。",
             code: "npm install -g @openai/codex",
             badge: "install",
             support_level: "official",
@@ -184,6 +346,14 @@ export const SETUP_GUIDE_TOOLS: SetupGuideTool[] = [
             badge: "install",
             support_level: "official",
             verification: meta(codexReference, "官方子命令"),
+          },
+          {
+            title: "升级",
+            description: "使用 npm 升级到最新版本。",
+            code: "npm update -g @openai/codex",
+            badge: "install",
+            support_level: "official",
+            verification: meta(codexCli, "官方升级方式"),
           },
         ],
       },
@@ -251,6 +421,37 @@ approval_policy = "on-request"`,
         ],
       },
       {
+        category: "初始化验证",
+        icon: CheckCircle,
+        verification: meta(codexReference, "验证命令来自官方文档。"),
+        items: [
+          {
+            title: "版本检查",
+            description: "验证是否成功安装。",
+            code: "codex --version",
+            badge: "verify",
+            support_level: "official",
+            verification: meta(codexReference, "官方命令"),
+          },
+          {
+            title: "帮助命令",
+            description: "查看可用命令。",
+            code: "codex --help",
+            badge: "verify",
+            support_level: "official",
+            verification: meta(codexReference, "官方命令"),
+          },
+          {
+            title: "认证状态",
+            description: "检查认证是否配置正确。",
+            code: "codex status",
+            badge: "verify",
+            support_level: "official",
+            verification: meta(codexReference, "官方命令"),
+          },
+        ],
+      },
+      {
         category: "问题排查",
         icon: Bug,
         verification: meta(codexReference, "排查命令来自官方帮助。"),
@@ -263,10 +464,20 @@ approval_policy = "on-request"`,
             support_level: "official",
             verification: meta(codexReference, "官方命令"),
           },
+          {
+            title: "常见问题",
+            description: "认证失败、网络问题、权限错误等请参考官方文档。",
+            badge: "faq",
+            support_level: "official",
+            verification: meta(codexReference, "官方排查文档"),
+          },
         ],
       },
     ],
   },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Gemini CLI
+  // ═══════════════════════════════════════════════════════════════════════════
   {
     id: "gemini",
     name: "Gemini CLI",
@@ -294,6 +505,13 @@ approval_policy = "on-request"`,
             support_level: "official",
             verification: meta(geminiRoot, "官方认证说明"),
           },
+          {
+            title: "操作系统",
+            description: "支持 macOS、Linux 和 Windows。",
+            badge: "prereq",
+            support_level: "official",
+            verification: meta(geminiRoot, "官方支持说明"),
+          },
         ],
       },
       {
@@ -317,6 +535,14 @@ approval_policy = "on-request"`,
             support_level: "official",
             verification: meta(geminiRoot, "官方安装方式"),
           },
+          {
+            title: "升级",
+            description: "使用 npm 升级到最新版本。",
+            code: "npm update -g @google/gemini-cli",
+            badge: "install",
+            support_level: "official",
+            verification: meta(geminiRoot, "官方升级方式"),
+          },
         ],
       },
       {
@@ -339,6 +565,14 @@ approval_policy = "on-request"`,
             badge: "config",
             support_level: "official",
             verification: meta(geminiConfig, "官方文件说明"),
+          },
+          {
+            title: "OAuth 登录",
+            description: "使用 Google 账户登录进行认证。",
+            code: "gemini login",
+            badge: "config",
+            support_level: "official",
+            verification: meta(geminiRoot, "官方登录方式"),
           },
         ],
       },
@@ -374,6 +608,44 @@ approval_policy = "on-request"`,
         ],
       },
       {
+        category: "初始化验证",
+        icon: CheckCircle,
+        verification: meta(geminiCommands, "验证命令来自官方文档。"),
+        items: [
+          {
+            title: "版本检查",
+            description: "验证是否成功安装。",
+            code: "gemini --version",
+            badge: "verify",
+            support_level: "official",
+            verification: meta(geminiCommands, "官方命令"),
+          },
+          {
+            title: "认证状态",
+            description: "检查认证是否配置正确。",
+            code: "gemini status",
+            badge: "verify",
+            support_level: "official",
+            verification: meta(geminiCommands, "官方命令"),
+          },
+        ],
+      },
+      {
+        category: "MCP 配置",
+        icon: Zap,
+        verification: meta(geminiMcp, "MCP 配置来自官方 MCP 文档。"),
+        items: [
+          {
+            title: "MCP 服务器",
+            description: "通过 MCP 协议连接外部工具和服务。",
+            code: "gemini mcp",
+            badge: "command",
+            support_level: "official",
+            verification: meta(geminiMcp, "官方 MCP 命令"),
+          },
+        ],
+      },
+      {
         category: "常见问题",
         icon: HelpCircle,
         verification: meta(geminiRoot, "FAQ 以官方文档为准。"),
@@ -385,11 +657,191 @@ approval_policy = "on-request"`,
             support_level: "official",
             verification: meta(geminiRoot, "动态信息治理"),
           },
+          {
+            title: "问题排查",
+            description: "遇到问题请参考官方文档的故障排查部分。",
+            badge: "debug",
+            support_level: "official",
+            verification: meta(geminiRoot, "官方排查文档"),
+          },
+        ],
+      },
+    ],
+  },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // OpenCode
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: "opencode",
+    name: "OpenCode",
+    official_url: opencodeRoot,
+    support_level: "official",
+    verification: meta(opencodeRoot, "OpenCode 官方文档入口可访问。"),
+    groups: [
+      {
+        category: "前置条件",
+        icon: Shield,
+        verification: meta(opencodeRoot, "前置条件来自官方文档。"),
+        items: [
+          {
+            title: "操作系统",
+            description: "支持 macOS、Linux 和 Windows。",
+            badge: "prereq",
+            support_level: "official",
+            verification: meta(opencodeRoot, "官方支持说明"),
+          },
+          {
+            title: "Node.js",
+            description: "请按官方安装页面确认最低 Node.js 要求。",
+            code: "node --version",
+            badge: "prereq",
+            support_level: "official",
+            verification: meta(opencodeRoot, "官方前置要求"),
+          },
+        ],
+      },
+      {
+        category: "安装步骤",
+        icon: Download,
+        verification: meta(opencodeInstall, "安装步骤来自官方安装文档。"),
+        items: [
+          {
+            title: "官方安装",
+            description: "按官方安装文档选择适合的安装方式。",
+            code: "# 请参考官方安装文档\n# https://opencode.ai/docs/install",
+            badge: "install",
+            support_level: "official",
+            verification: meta(opencodeInstall, "官方安装方式"),
+          },
+          {
+            title: "升级",
+            description: "使用官方方式升级到最新版本。",
+            badge: "install",
+            support_level: "official",
+            verification: meta(opencodeInstall, "官方升级方式"),
+          },
+        ],
+      },
+      {
+        category: "配置与认证",
+        icon: Settings,
+        verification: meta(opencodeConfig, "配置项来自官方配置文档。"),
+        items: [
+          {
+            title: "项目级配置",
+            description: "在项目根目录创建 opencode.json 配置文件。",
+            code: "opencode.json",
+            badge: "config",
+            support_level: "official",
+            verification: meta(opencodeConfig, "官方配置文件"),
+          },
+          {
+            title: "全局配置",
+            description: "用户全局配置文件位置。",
+            code: "~/.config/opencode/opencode.json",
+            badge: "config",
+            support_level: "official",
+            verification: meta(opencodeConfig, "官方全局配置"),
+          },
+          {
+            title: "项目指令文件",
+            description: "使用 AGENTS.md 管理项目级行为指令。",
+            code: "AGENTS.md",
+            badge: "config",
+            support_level: "official",
+            verification: meta(opencodeConfig, "官方指令文件"),
+          },
+        ],
+      },
+      {
+        category: "核心命令",
+        icon: Play,
+        verification: meta(opencodeRoot, "命令来自官方文档。"),
+        items: [
+          {
+            title: "交互模式",
+            description: "启动交互会话。",
+            code: "opencode",
+            badge: "command",
+            support_level: "official",
+            verification: meta(opencodeRoot, "官方命令"),
+          },
+          {
+            title: "帮助命令",
+            description: "查看可用命令和参数说明。",
+            code: "opencode --help",
+            badge: "verify",
+            support_level: "official",
+            verification: meta(opencodeRoot, "官方命令"),
+          },
+          {
+            title: "版本检查",
+            description: "查看当前版本。",
+            code: "opencode --version",
+            badge: "verify",
+            support_level: "official",
+            verification: meta(opencodeRoot, "官方命令"),
+          },
+        ],
+      },
+      {
+        category: "初始化验证",
+        icon: CheckCircle,
+        verification: meta(opencodeRoot, "验证命令来自官方文档。"),
+        items: [
+          {
+            title: "版本检查",
+            description: "验证是否成功安装。",
+            code: "opencode --version",
+            badge: "verify",
+            support_level: "official",
+            verification: meta(opencodeRoot, "官方命令"),
+          },
+          {
+            title: "帮助命令",
+            description: "查看可用命令。",
+            code: "opencode --help",
+            badge: "verify",
+            support_level: "official",
+            verification: meta(opencodeRoot, "官方命令"),
+          },
+        ],
+      },
+      {
+        category: "问题排查",
+        icon: Bug,
+        verification: meta(opencodeRoot, "排查命令来自官方文档。"),
+        items: [
+          {
+            title: "调试模式",
+            description: "启用调试输出以排查问题。",
+            code: "opencode --debug",
+            badge: "debug",
+            support_level: "official",
+            verification: meta(opencodeRoot, "官方调试命令"),
+          },
+          {
+            title: "详细输出",
+            description: "启用详细输出模式。",
+            code: "opencode --verbose",
+            badge: "debug",
+            support_level: "official",
+            verification: meta(opencodeRoot, "官方详细模式"),
+          },
+          {
+            title: "常见问题",
+            description: "遇到问题请参考官方文档的故障排查部分。",
+            badge: "faq",
+            support_level: "official",
+            verification: meta(opencodeRoot, "官方排查文档"),
+          },
         ],
       },
     ],
   },
 ];
+
+// ─── Badge labels ────────────────────────────────────────────────────────────
 
 export const SETUP_BADGE_LABELS: Record<string, { label: string; className: string }> = {
   path: { label: "路径", className: "bg-primary/15 text-primary border-primary/30" },
@@ -406,7 +858,10 @@ export const SETUP_BADGE_LABELS: Record<string, { label: string; className: stri
   faq: { label: "常见问题", className: "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30" },
 };
 
+// ─── Metadata ────────────────────────────────────────────────────────────────
+
 export const SETUP_METADATA = {
   verified_at: VERIFIED_AT,
   codex_windows_doc: codexWindows,
+  opencode_official_url: opencodeRoot,
 };

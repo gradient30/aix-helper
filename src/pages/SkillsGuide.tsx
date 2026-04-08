@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 import { saveAs } from "file-saver";
 import { ChevronDown, ChevronRight, ChevronsUpDown, Download, ExternalLink, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DocsRefreshPanel } from "@/components/docs-refresh/DocsRefreshPanel";
+import { VendorGuideTabs } from "@/components/docs-refresh/VendorGuideTabs";
 import { SKILLS_BADGE_LABELS, SKILLS_GUIDE_TOOLS } from "@/config/docs-catalog/skills";
 import type { GuideContentItem, SkillsGuideTool } from "@/config/docs-catalog/types";
 
@@ -158,12 +160,15 @@ export default function SkillsGuide() {
         <p className="text-sm text-muted-foreground mt-1">{t("skillsGuide.subtitle")}</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSearch(""); }}>
-        <TabsList className="grid w-full grid-cols-3 h-auto p-1 gap-1">
-          {SKILLS_GUIDE_TOOLS.map((tool) => (
-            <TabsTrigger key={tool.id} value={tool.id} className="capitalize text-sm py-2.5">{tool.name}</TabsTrigger>
-          ))}
-        </TabsList>
+      <VendorGuideTabs
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value);
+          setSearch("");
+        }}
+        tools={SKILLS_GUIDE_TOOLS}
+      >
+        <DocsRefreshPanel scope="skills" pageRoute="/skills-guide" vendorId={activeTab} />
 
         {filteredTools.map((tool) => (
           <TabsContent key={tool.id} value={tool.id} className="mt-4 space-y-4">
@@ -237,7 +242,7 @@ export default function SkillsGuide() {
             )}
           </TabsContent>
         ))}
-      </Tabs>
+      </VendorGuideTabs>
     </div>
   );
 }
