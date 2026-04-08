@@ -1,10 +1,10 @@
-import type { DocRefreshBaseEntity, DocRefreshOverride } from "./types";
+import type { DocRefreshOverride } from "./types";
 
-function getEntityKey(item: DocRefreshBaseEntity | { entityKey: string }): string {
+function getEntityKey(item: { entityKey: string }): string {
   return item.entityKey;
 }
 
-export function mergeOverrides<T extends DocRefreshBaseEntity>(
+export function mergeOverrides<T extends { entityKey: string }>(
   baseline: T[],
   overrides: DocRefreshOverride<T>[],
 ): T[] {

@@ -138,6 +138,11 @@ export function diffCatalogItems<T extends DocRefreshBaseEntity>(input: {
     if (bestMatch && bestScore >= threshold) {
       similar.push({ baseline: bestMatch, candidate, similarityScore: bestScore });
       matchedBaselineKeys.add(getEntityKey(bestMatch));
+      const bestKey = getEntityKey(bestMatch);
+      const bestIndex = remainingBaseline.findIndex((item) => getEntityKey(item) === bestKey);
+      if (bestIndex >= 0) {
+        remainingBaseline.splice(bestIndex, 1);
+      }
       continue;
     }
 

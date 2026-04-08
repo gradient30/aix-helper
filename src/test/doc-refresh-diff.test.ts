@@ -55,23 +55,61 @@ describe("doc refresh diff utilities", () => {
     });
   });
 
+  it("matches a baseline item as similar only once", () => {
+    const baseline = [
+      {
+        entityKey: "guide:skills:claude:setup:Install Skills",
+        vendorId: "claude",
+        category: "setup",
+        title: "Install Skills",
+        description: "Install via .claude/skills",
+      },
+    ];
+
+    const candidate = [
+      {
+        entityKey: "guide:skills:claude:setup:Install Skills Alpha",
+        vendorId: "claude",
+        category: "setup",
+        title: "Install Skills Alpha",
+        description: "Install via .claude/skills with alpha wording",
+      },
+      {
+        entityKey: "guide:skills:claude:setup:Install Skills Beta",
+        vendorId: "claude",
+        category: "setup",
+        title: "Install Skills Beta",
+        description: "Install via .claude/skills with beta wording",
+      },
+    ];
+
+    const result = diffCatalogItems({ baseline, candidate });
+
+    expect(result.summary).toEqual({
+      added: 1,
+      modified: 0,
+      stale: 0,
+      similar: 1,
+    });
+  });
+
   it("applies delete tombstones before upserts while keeping order stable", () => {
     const baseline = [
-      { entityKey: "one", value: "A" },
-      { entityKey: "two", value: "B" },
-      { entityKey: "three", value: "C" },
+      { entityKey: "one" },
+      { entityKey: "two" },
+      { entityKey: "three" },
     ];
 
     const overrides = [
       { entityKey: "two", overrideType: "delete", payload: null },
-      { entityKey: "three", overrideType: "upsert", payload: { entityKey: "three", value: "C+" } },
-      { entityKey: "four", overrideType: "upsert", payload: { entityKey: "four", value: "D" } },
+      { entityKey: "three", overrideType: "upsert", payload: { entityKey: "three" } },
+      { entityKey: "four", overrideType: "upsert", payload: { entityKey: "four" } },
     ];
 
     expect(mergeOverrides(baseline, overrides)).toEqual([
-      { entityKey: "one", value: "A" },
-      { entityKey: "three", value: "C+" },
-      { entityKey: "four", value: "D" },
+      { entityKey: "one" },
+      { entityKey: "three" },
+      { entityKey: "four" },
     ]);
   });
 });
