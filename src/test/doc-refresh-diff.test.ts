@@ -50,7 +50,7 @@ describe("doc refresh diff utilities", () => {
     expect(result.summary).toEqual({
       added: 0,
       modified: 1,
-      stale: 1,
+      stale: 0,
       similar: 1,
     });
   });

@@ -137,6 +137,7 @@ export function diffCatalogItems<T extends DocRefreshBaseEntity>(input: {
 
     if (bestMatch && bestScore >= threshold) {
       similar.push({ baseline: bestMatch, candidate, similarityScore: bestScore });
+      matchedBaselineKeys.add(getEntityKey(bestMatch));
       continue;
     }
 
