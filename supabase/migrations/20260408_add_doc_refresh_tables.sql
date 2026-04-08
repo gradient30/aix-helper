@@ -58,6 +58,9 @@ CREATE TABLE public.doc_refresh_runs (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.doc_refresh_runs
+  ADD CONSTRAINT doc_refresh_runs_id_user_id_key UNIQUE (id, user_id);
+
 ALTER TABLE public.doc_refresh_runs ENABLE ROW LEVEL SECURITY;
 
 CREATE TRIGGER update_doc_refresh_runs_updated_at
@@ -99,7 +102,7 @@ CREATE POLICY "Users can delete own doc_refresh_runs"
 CREATE TABLE public.doc_refresh_snapshots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  run_id UUID NOT NULL REFERENCES public.doc_refresh_runs(id) ON DELETE CASCADE,
+  run_id UUID NOT NULL,
   scope TEXT NOT NULL,
   vendor_id TEXT NOT NULL,
   source_url TEXT NOT NULL,
@@ -109,6 +112,12 @@ CREATE TABLE public.doc_refresh_snapshots (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (run_id, vendor_id, source_url)
 );
+
+ALTER TABLE public.doc_refresh_snapshots
+  ADD CONSTRAINT doc_refresh_snapshots_run_id_user_id_fkey
+  FOREIGN KEY (run_id, user_id)
+  REFERENCES public.doc_refresh_runs(id, user_id)
+  ON DELETE CASCADE;
 
 ALTER TABLE public.doc_refresh_snapshots ENABLE ROW LEVEL SECURITY;
 
@@ -140,7 +149,7 @@ CREATE POLICY "Users can delete own doc_refresh_snapshots"
 CREATE TABLE public.doc_refresh_diff_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  run_id UUID NOT NULL REFERENCES public.doc_refresh_runs(id) ON DELETE CASCADE,
+  run_id UUID NOT NULL,
   scope TEXT NOT NULL,
   vendor_id TEXT NOT NULL,
   entity_key TEXT NOT NULL,
@@ -156,6 +165,12 @@ CREATE TABLE public.doc_refresh_diff_items (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (run_id, entity_key)
 );
+
+ALTER TABLE public.doc_refresh_diff_items
+  ADD CONSTRAINT doc_refresh_diff_items_run_id_user_id_fkey
+  FOREIGN KEY (run_id, user_id)
+  REFERENCES public.doc_refresh_runs(id, user_id)
+  ON DELETE CASCADE;
 
 ALTER TABLE public.doc_refresh_diff_items ENABLE ROW LEVEL SECURITY;
 

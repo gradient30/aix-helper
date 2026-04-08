@@ -15,10 +15,18 @@ const sourceText = `
 
   type Tables = Database["public"]["Tables"];
   type OverrideRow = Tables["doc_catalog_overrides"]["Row"];
+  type SettingsRow = Tables["doc_refresh_user_settings"]["Row"];
+  type SnapshotRow = Tables["doc_refresh_snapshots"]["Row"];
 
+  type _HasSettings = AssertTrue<"doc_refresh_user_settings" extends keyof Tables ? true : false>;
+  type _HasSnapshots = AssertTrue<"doc_refresh_snapshots" extends keyof Tables ? true : false>;
   type _HasRuns = AssertTrue<"doc_refresh_runs" extends keyof Tables ? true : false>;
   type _HasDiffItems = AssertTrue<"doc_refresh_diff_items" extends keyof Tables ? true : false>;
   type _HasOverrides = AssertTrue<"doc_catalog_overrides" extends keyof Tables ? true : false>;
+  type _SettingsHasMask = AssertTrue<"firecrawl_key_mask" extends keyof SettingsRow ? true : false>;
+  type _SettingsHasVerifiedAt = AssertTrue<"firecrawl_last_verified_at" extends keyof SettingsRow ? true : false>;
+  type _SnapshotHasRun = AssertTrue<"run_id" extends keyof SnapshotRow ? true : false>;
+  type _SnapshotHasUser = AssertTrue<"user_id" extends keyof SnapshotRow ? true : false>;
   type _HasPublishedIdentity = AssertTrue<"scope" extends keyof OverrideRow ? true : false>;
   type _NoUserId = AssertFalse<"user_id" extends keyof OverrideRow ? true : false>;
   type _HasSourceRun = AssertTrue<"source_run_id" extends keyof OverrideRow ? true : false>;

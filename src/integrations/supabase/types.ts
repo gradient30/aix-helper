@@ -228,11 +228,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "doc_refresh_diff_items_run_id_fkey"
-            columns: ["run_id"]
+            foreignKeyName: "doc_refresh_diff_items_run_id_user_id_fkey"
+            columns: ["run_id", "user_id"]
             isOneToOne: false
             referencedRelation: "doc_refresh_runs"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -323,11 +323,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "doc_refresh_snapshots_run_id_fkey"
-            columns: ["run_id"]
+            foreignKeyName: "doc_refresh_snapshots_run_id_user_id_fkey"
+            columns: ["run_id", "user_id"]
             isOneToOne: false
             referencedRelation: "doc_refresh_runs"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
