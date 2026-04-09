@@ -353,6 +353,19 @@ Deno.serve(async (req) => {
       failedSources: failures.length,
     });
 
+    if (requestBody.sourceMode === "firecrawl_manual" && successfulSnapshots.length > 0) {
+      const { error: settingsUpdateError } = await supabase
+        .from("doc_refresh_user_settings")
+        .update({
+          firecrawl_last_verified_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+
+      if (settingsUpdateError) {
+        console.warn("Failed to update Firecrawl verification timestamp:", settingsUpdateError.message);
+      }
+    }
+
     const failureMessage = failures.length > 0
       ? failures.map((failure) => `${failure.sourceUrl}: ${failure.message}`).join("\n")
       : null;

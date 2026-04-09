@@ -54,7 +54,8 @@ export function useSaveDocRefreshSettings() {
 
   return useMutation({
     mutationFn: (firecrawlKey: string) => saveDocRefreshSettings(firecrawlKey),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(["doc-refresh-settings"], data);
       queryClient.invalidateQueries({ queryKey: ["doc-refresh-settings"] });
     },
   });
@@ -65,7 +66,8 @@ export function useClearDocRefreshSettings() {
 
   return useMutation({
     mutationFn: clearDocRefreshSettings,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(["doc-refresh-settings"], data);
       queryClient.invalidateQueries({ queryKey: ["doc-refresh-settings"] });
     },
   });

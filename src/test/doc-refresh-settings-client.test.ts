@@ -79,4 +79,26 @@ describe("doc refresh settings client", () => {
     expect(result.firecrawlKeyMask).toBeNull();
     expect(result.firecrawlLastVerifiedAt).toBeNull();
   });
+
+  it("surfaces the detailed edge function error message", async () => {
+    invokeMock.mockResolvedValue({
+      data: null,
+      error: {
+        message: "Edge Function returned a non-2xx status code",
+        context: new Response(JSON.stringify({
+          success: false,
+          message: "Missing DOC_REFRESH_FIRECRAWL_SECRET or SUPABASE_SERVICE_ROLE_KEY",
+        }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }),
+      },
+    });
+
+    const { saveDocRefreshSettings } = await import("@/features/docs-refresh/api");
+
+    await expect(saveDocRefreshSettings("fc-demo-secret")).rejects.toThrow(
+      "Missing DOC_REFRESH_FIRECRAWL_SECRET or SUPABASE_SERVICE_ROLE_KEY",
+    );
+  });
 });

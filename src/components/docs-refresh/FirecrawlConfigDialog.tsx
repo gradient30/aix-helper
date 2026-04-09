@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { FirecrawlSettings } from "@/features/docs-refresh/api";
-import { KeyRound, ShieldCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
 
 type FirecrawlConfigDialogProps = {
   open: boolean;
@@ -22,6 +23,7 @@ type FirecrawlConfigDialogProps = {
   onClear: () => void;
   isSaving?: boolean;
   isClearing?: boolean;
+  errorMessage?: string | null;
 };
 
 function formatTimestamp(value: string | null): string {
@@ -43,6 +45,7 @@ export function FirecrawlConfigDialog({
   onClear,
   isSaving,
   isClearing,
+  errorMessage,
 }: FirecrawlConfigDialogProps) {
   const [draftKey, setDraftKey] = useState("");
 
@@ -97,6 +100,13 @@ export function FirecrawlConfigDialog({
           <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs text-muted-foreground">
             保存后将用于当前登录用户的手动抓取流程。建议先保存，再到文档页执行 Firecrawl 刷新。
           </div>
+
+          {errorMessage && (
+            <Alert variant="destructive" className="border-red-500/30 bg-red-500/5">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">

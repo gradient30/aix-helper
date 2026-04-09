@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getDetailedErrorMessage } from "@/lib/errors";
 import { buildDocRefreshDiffItemView, buildDocRefreshRunView } from "./selectors";
 import type {
   DocRefreshDiffItemView,
@@ -49,15 +50,23 @@ const EMPTY_SETTINGS: FirecrawlSettings = {
   firecrawlLastVerifiedAt: null,
 };
 
+async function throwInvokeError(error: unknown): Promise<never> {
+  throw new Error(await getDetailedErrorMessage(error));
+}
+
 async function invokeDocRefreshSettings(body: DocRefreshSettingsRequest): Promise<FirecrawlSettings> {
   const { data, error } = await supabase.functions.invoke("doc-refresh-settings", { body });
-  if (error) throw error;
+  if (error) {
+    await throwInvokeError(error);
+  }
   return (data as FirecrawlSettings | null | undefined) ?? EMPTY_SETTINGS;
 }
 
 async function invokeDocRefreshRun(body: TriggerDocRefreshInput): Promise<TriggerDocRefreshResult> {
   const { data, error } = await supabase.functions.invoke("doc-refresh-run", { body });
-  if (error) throw error;
+  if (error) {
+    await throwInvokeError(error);
+  }
   return data as TriggerDocRefreshResult;
 }
 

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/lib/errors";
 import {
   useApplyDocRefreshDecision,
   useClearDocRefreshSettings,
@@ -65,6 +67,19 @@ export function DocsRefreshPanel({ scope, pageRoute, vendorId }: DocsRefreshPane
 
   const refreshDisabled = triggerMutation.isPending
     || (sourceMode === "firecrawl_manual" && !settings.firecrawlConfigured);
+  const configErrorMessage = saveSettingsMutation.error
+    ? getErrorMessage(saveSettingsMutation.error)
+    : clearSettingsMutation.error
+      ? getErrorMessage(clearSettingsMutation.error)
+      : null;
+
+  const handleConfigOpenChange = (open: boolean) => {
+    if (!open) {
+      saveSettingsMutation.reset();
+      clearSettingsMutation.reset();
+    }
+    setIsConfigOpen(open);
+  };
 
   return (
     <>
@@ -93,20 +108,48 @@ export function DocsRefreshPanel({ scope, pageRoute, vendorId }: DocsRefreshPane
 
       <FirecrawlConfigDialog
         open={isConfigOpen}
-        onOpenChange={setIsConfigOpen}
+        onOpenChange={handleConfigOpenChange}
         settings={settings}
         onSave={(firecrawlKey) => {
+          clearSettingsMutation.reset();
+          saveSettingsMutation.reset();
           saveSettingsMutation.mutate(firecrawlKey, {
-            onSuccess: () => setIsConfigOpen(false),
+            onSuccess: (data) => {
+              toast({
+                title: "Firecrawl Key 已保存",
+                description: data.firecrawlKeyMask ? `当前掩码：${data.firecrawlKeyMask}` : undefined,
+              });
+              setIsConfigOpen(false);
+            },
+            onError: (error) => {
+              toast({
+                title: "Firecrawl Key 保存失败",
+                description: getErrorMessage(error),
+                variant: "destructive",
+              });
+            },
           });
         }}
         onClear={() => {
+          saveSettingsMutation.reset();
+          clearSettingsMutation.reset();
           clearSettingsMutation.mutate(undefined, {
-            onSuccess: () => setIsConfigOpen(false),
+            onSuccess: () => {
+              toast({ title: "Firecrawl Key 已清除" });
+              setIsConfigOpen(false);
+            },
+            onError: (error) => {
+              toast({
+                title: "Firecrawl Key 清除失败",
+                description: getErrorMessage(error),
+                variant: "destructive",
+              });
+            },
           });
         }}
         isSaving={saveSettingsMutation.isPending}
         isClearing={clearSettingsMutation.isPending}
+        errorMessage={configErrorMessage}
       />
 
       <DocDiffWorkbench
