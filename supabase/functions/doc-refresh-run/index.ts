@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.96.0";
 
+import { buildDocRefreshRunArtifacts } from "../../../src/features/docs-refresh/run-artifacts.ts";
 import { buildDocRefreshSourcePlan } from "../../../src/features/docs-refresh/source-plan.ts";
 import { summarizeDocRefreshRun } from "../../../src/features/docs-refresh/run-summary.ts";
 import { decryptDocRefreshSecret } from "../_shared/doc-refresh-crypto.ts";
@@ -22,6 +23,11 @@ type SourceJob = {
   vendorId: string;
   pageRoute: string;
   sourceUrl: string;
+};
+
+type SuccessfulSnapshot = SourceJob & {
+  rawMarkdown: string;
+  contentHash: string;
 };
 
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "")
@@ -274,7 +280,7 @@ Deno.serve(async (req) => {
     const runId = runRow.id as string;
 
     const failures: Array<{ sourceUrl: string; message: string }> = [];
-    let successfulSnapshots = 0;
+    const successfulSnapshots: SuccessfulSnapshot[] = [];
 
     for (const job of sourceJobs) {
       try {
@@ -283,29 +289,11 @@ Deno.serve(async (req) => {
           : await fetchOfficialMarkdown(job.sourceUrl);
 
         const contentHash = await hashContent(rawMarkdown);
-        const { error: snapshotError } = await supabase
-          .from("doc_refresh_snapshots")
-          .insert({
-            user_id: user.id,
-            run_id: runId,
-            scope: requestBody.scope,
-            vendor_id: job.vendorId,
-            source_url: job.sourceUrl,
-            raw_markdown: rawMarkdown,
-            normalized_payload: {
-              sourceMode: requestBody.sourceMode,
-              pageRoute: job.pageRoute,
-              sourceUrl: job.sourceUrl,
-              vendorId: job.vendorId,
-            },
-            content_hash: contentHash,
-          });
-
-        if (snapshotError) {
-          throw new Error(snapshotError.message);
-        }
-
-        successfulSnapshots += 1;
+        successfulSnapshots.push({
+          ...job,
+          rawMarkdown,
+          contentHash,
+        });
       } catch (error) {
         failures.push({
           sourceUrl: job.sourceUrl,
@@ -314,9 +302,54 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (successfulSnapshots.length > 0) {
+      const artifacts = buildDocRefreshRunArtifacts({
+        runId,
+        userId: user.id,
+        scope: requestBody.scope,
+        pageRoute,
+        sourceMode: requestBody.sourceMode,
+        snapshots: successfulSnapshots.map((snapshot) => ({
+          vendorId: snapshot.vendorId,
+          pageRoute: snapshot.pageRoute,
+          sourceUrl: snapshot.sourceUrl,
+          rawMarkdown: snapshot.rawMarkdown,
+        })),
+      });
+
+      const snapshotRows = artifacts.snapshotRows.map((snapshot, index) => ({
+        user_id: user.id,
+        run_id: runId,
+        scope: requestBody.scope,
+        vendor_id: snapshot.vendorId,
+        source_url: snapshot.sourceUrl,
+        raw_markdown: snapshot.rawMarkdown,
+        normalized_payload: snapshot.normalizedPayload,
+        content_hash: successfulSnapshots[index].contentHash,
+      }));
+
+      const { error: snapshotInsertError } = await supabase
+        .from("doc_refresh_snapshots")
+        .insert(snapshotRows);
+
+      if (snapshotInsertError) {
+        throw new Error(snapshotInsertError.message);
+      }
+
+      if (artifacts.diffRows.length > 0) {
+        const { error: diffInsertError } = await supabase
+          .from("doc_refresh_diff_items")
+          .insert(artifacts.diffRows);
+
+        if (diffInsertError) {
+          throw new Error(diffInsertError.message);
+        }
+      }
+    }
+
     const runSummary = summarizeDocRefreshRun({
       totalSources: sourceJobs.length,
-      successfulSnapshots,
+      successfulSnapshots: successfulSnapshots.length,
       failedSources: failures.length,
     });
 
