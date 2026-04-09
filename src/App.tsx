@@ -22,6 +22,10 @@ import AiGlossary from "./pages/AiGlossary";
 import ApiCalls from "./pages/ApiCalls";
 
 const queryClient = new QueryClient();
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
 
 const MissingSupabaseConfig = () => (
   <div className="min-h-screen bg-background text-foreground p-6 md:p-10 flex items-center justify-center">
@@ -56,7 +60,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter future={routerFuture}>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/import" element={<ProtectedRoute><ImportPage /></ProtectedRoute>} />
