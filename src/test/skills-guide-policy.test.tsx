@@ -43,6 +43,10 @@ vi.mock("@/features/docs-refresh/hooks", () => ({
     data: [],
     isLoading: false,
   }),
+  useDocCatalogOverrides: () => ({
+    data: [],
+    isLoading: false,
+  }),
   useTriggerDocRefresh: () => ({
     mutate: vi.fn(),
     isPending: false,

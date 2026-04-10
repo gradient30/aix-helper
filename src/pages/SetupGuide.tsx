@@ -10,6 +10,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DocsRefreshPanel } from "@/components/docs-refresh/DocsRefreshPanel";
 import { VendorGuideTabs } from "@/components/docs-refresh/VendorGuideTabs";
+import { useDocCatalogOverrides } from "@/features/docs-refresh/hooks";
+import { applyGuideToolOverrides } from "@/features/docs-refresh/published-catalog";
 import { SETUP_BADGE_LABELS, SETUP_GUIDE_TOOLS } from "@/config/docs-catalog/setup";
 import type { GuideContentItem, SetupGuideTool } from "@/config/docs-catalog/types";
 
@@ -126,12 +128,18 @@ export default function SetupGuide() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("claude");
   const [allExpanded, setAllExpanded] = useState(false);
+  const overridesQuery = useDocCatalogOverrides("setup");
+
+  const publishedTools = useMemo(
+    () => applyGuideToolOverrides("setup", SETUP_GUIDE_TOOLS, overridesQuery.data ?? []),
+    [overridesQuery.data],
+  );
 
   const filteredTools = useMemo(() => {
-    if (!search.trim()) return SETUP_GUIDE_TOOLS;
+    if (!search.trim()) return publishedTools;
     const q = search.toLowerCase();
 
-    return SETUP_GUIDE_TOOLS.map((tool) => ({
+    return publishedTools.map((tool) => ({
       ...tool,
       groups: tool.groups
         .map((g) => ({
@@ -145,10 +153,10 @@ export default function SetupGuide() {
         }))
         .filter((g) => g.items.length > 0),
     }));
-  }, [search]);
+  }, [publishedTools, search]);
 
   const activeTool = filteredTools.find((tool) => tool.id === activeTab) ?? filteredTools[0];
-  const originalTool = SETUP_GUIDE_TOOLS.find((tool) => tool.id === activeTab)!;
+  const originalTool = publishedTools.find((tool) => tool.id === activeTab) ?? publishedTools[0];
   const totalItems = originalTool.groups.reduce((sum, g) => sum + g.items.length, 0);
   const filteredItems = activeTool?.groups.reduce((sum, g) => sum + g.items.length, 0) ?? 0;
 
@@ -165,7 +173,7 @@ export default function SetupGuide() {
           setActiveTab(value);
           setSearch("");
         }}
-        tools={SETUP_GUIDE_TOOLS}
+        tools={publishedTools}
       >
         <DocsRefreshPanel scope="setup" pageRoute="/setup-guide" vendorId={activeTab} />
 

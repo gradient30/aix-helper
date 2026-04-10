@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   applyDocRefreshDecision,
   clearDocRefreshSettings,
+  fetchDocCatalogOverrides,
   dismissDocRefreshDecision,
   fetchDocRefreshDiffItems,
   fetchDocRefreshSettings,
@@ -33,6 +34,13 @@ export function useDocRefreshDiffItems(runId: string | null) {
     queryKey: ["doc-refresh-diff-items", runId],
     queryFn: () => fetchDocRefreshDiffItems(runId as string),
     enabled: Boolean(runId),
+  });
+}
+
+export function useDocCatalogOverrides(scope: DocRefreshScope) {
+  return useQuery({
+    queryKey: ["doc-catalog-overrides", scope],
+    queryFn: () => fetchDocCatalogOverrides(scope),
   });
 }
 
@@ -84,6 +92,9 @@ export function useApplyDocRefreshDecision(scope: DocRefreshScope, pageRoute: st
       });
       queryClient.invalidateQueries({
         queryKey: ["doc-refresh-diff-items", variables.item.runId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["doc-catalog-overrides", scope],
       });
     },
   });

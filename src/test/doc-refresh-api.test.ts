@@ -1,31 +1,107 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const invokeMock = vi.fn();
+const fetchMock = vi.fn();
 const fromMock = vi.fn();
-const getUserMock = vi.fn();
+const getSessionMock = vi.fn();
+const refreshSessionMock = vi.fn();
+const signOutMock = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    functions: {
-      invoke: invokeMock,
-    },
     from: fromMock,
     auth: {
-      getUser: getUserMock,
+      getSession: getSessionMock,
+      refreshSession: refreshSessionMock,
+      signOut: signOutMock,
     },
   },
 }));
 
 describe("doc refresh api", () => {
   beforeEach(() => {
-    invokeMock.mockReset();
+    vi.stubEnv("VITE_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "public-anon-key");
+    fetchMock.mockReset();
     fromMock.mockReset();
-    getUserMock.mockReset();
+    getSessionMock.mockReset();
+    refreshSessionMock.mockReset();
+    signOutMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+
+    getSessionMock.mockResolvedValue({
+      data: { session: { access_token: "session-token" } },
+      error: null,
+    });
+    refreshSessionMock.mockResolvedValue({
+      data: { session: { access_token: "refreshed-token" } },
+      error: null,
+    });
+    signOutMock.mockResolvedValue(undefined);
   });
 
   it("triggers a doc refresh run through the edge function", async () => {
-    invokeMock.mockResolvedValue({
-      data: {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({
+      success: true,
+      runId: "run-123",
+      status: "success",
+      summaryCounts: {
+        totalSources: 2,
+        successfulSnapshots: 2,
+        failedSources: 0,
+      },
+      pageRoute: "/cli-guide",
+      failures: [],
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }));
+
+    const { triggerDocRefresh } = await import("@/features/docs-refresh/api");
+    const result = await triggerDocRefresh({
+      scope: "cli",
+      pageRoute: "/cli-guide",
+      vendorIds: ["claude"],
+      sourceMode: "official_fetch",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.supabase.co/functions/v1/doc-refresh-run",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          apikey: "public-anon-key",
+          Authorization: "Bearer session-token",
+        }),
+        body: JSON.stringify({
+          scope: "cli",
+          pageRoute: "/cli-guide",
+          vendorIds: ["claude"],
+          sourceMode: "official_fetch",
+          access_token: "session-token",
+        }),
+      }),
+    );
+    expect(result).toEqual({
+      success: true,
+      runId: "run-123",
+      status: "success",
+      summaryCounts: {
+        totalSources: 2,
+        successfulSnapshots: 2,
+        failedSources: 0,
+      },
+      pageRoute: "/cli-guide",
+      failures: [],
+    });
+  });
+
+  it("retries the refresh run once after a 401", async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ message: "未授权" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
         success: true,
         runId: "run-123",
         status: "success",
@@ -36,9 +112,10 @@ describe("doc refresh api", () => {
         },
         pageRoute: "/cli-guide",
         failures: [],
-      },
-      error: null,
-    });
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }));
 
     const { triggerDocRefresh } = await import("@/features/docs-refresh/api");
     const result = await triggerDocRefresh({
@@ -48,14 +125,8 @@ describe("doc refresh api", () => {
       sourceMode: "official_fetch",
     });
 
-    expect(invokeMock).toHaveBeenCalledWith("doc-refresh-run", {
-      body: {
-        scope: "cli",
-        pageRoute: "/cli-guide",
-        vendorIds: ["claude"],
-        sourceMode: "official_fetch",
-      },
-    });
+    expect(refreshSessionMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result).toEqual({
       success: true,
       runId: "run-123",
@@ -211,30 +282,11 @@ describe("doc refresh api", () => {
     ]);
   });
 
-  it("applies a diff decision by upserting overrides and marking the item applied", async () => {
-    getUserMock.mockResolvedValue({
-      data: { user: { id: "user-1" } },
-      error: null,
-    });
-
-    const overrideBuilder = {
-      upsert: vi.fn(),
-    };
-    overrideBuilder.upsert.mockResolvedValue({ error: null });
-
-    const diffUpdateBuilder = {
-      update: vi.fn(),
-      eq: vi.fn(),
-    };
-    diffUpdateBuilder.update.mockReturnValue(diffUpdateBuilder);
-    diffUpdateBuilder.eq.mockReturnValue(diffUpdateBuilder);
-    diffUpdateBuilder.eq.mockResolvedValue({ error: null });
-
-    fromMock.mockImplementation((table: string) => {
-      if (table === "doc_catalog_overrides") return overrideBuilder;
-      if (table === "doc_refresh_diff_items") return diffUpdateBuilder;
-      throw new Error(`Unexpected table: ${table}`);
-    });
+  it("applies a diff decision through the edge function", async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }));
 
     const { applyDocRefreshDecision } = await import("@/features/docs-refresh/api");
 
@@ -261,28 +313,19 @@ describe("doc refresh api", () => {
       action: "replace_all",
     });
 
-    expect(overrideBuilder.upsert).toHaveBeenCalledWith(
-      [
-        {
-          scope: "skills",
-          vendor_id: "codex",
-          entity_key: "guide:skills:codex:workflow:Agent Skills",
-          override_type: "upsert",
-          payload: {
-            title: "Agent Skills",
-            entityKey: "guide:skills:codex:workflow:Agent Skills",
-          },
-          source_run_id: "run-1",
-          applied_by: "user-1",
-        },
-      ],
-      { onConflict: "scope,vendor_id,entity_key" },
-    );
-
-    expect(diffUpdateBuilder.update).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.supabase.co/functions/v1/doc-refresh-apply",
       expect.objectContaining({
-        review_action: "replace_all",
-        review_status: "applied",
+        method: "POST",
+        headers: expect.objectContaining({
+          apikey: "public-anon-key",
+          Authorization: "Bearer session-token",
+        }),
+        body: JSON.stringify({
+          itemId: "diff-1",
+          action: "replace_all",
+          access_token: "session-token",
+        }),
       }),
     );
   });

@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DocsRefreshPanel } from "@/components/docs-refresh/DocsRefreshPanel";
 import { VendorGuideTabs } from "@/components/docs-refresh/VendorGuideTabs";
+import { useDocCatalogOverrides } from "@/features/docs-refresh/hooks";
+import { applyCliGuideOverrides } from "@/features/docs-refresh/published-catalog";
 import { CLI_BADGE_LABELS, CLI_GUIDE_TOOLS } from "@/config/docs-catalog/cli";
 import type { CliGuideTool, GuideCommand } from "@/config/docs-catalog/types";
 
@@ -109,12 +111,18 @@ export default function CliGuide() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("claude");
   const [allExpanded, setAllExpanded] = useState(false);
+  const overridesQuery = useDocCatalogOverrides("cli");
+
+  const publishedTools = useMemo(
+    () => applyCliGuideOverrides(CLI_GUIDE_TOOLS, overridesQuery.data ?? []),
+    [overridesQuery.data],
+  );
 
   const filteredTools = useMemo(() => {
-    if (!search.trim()) return CLI_GUIDE_TOOLS;
+    if (!search.trim()) return publishedTools;
     const q = search.toLowerCase();
 
-    return CLI_GUIDE_TOOLS.map((tool) => ({
+    return publishedTools.map((tool) => ({
       ...tool,
       groups: tool.groups
         .map((g) => ({
@@ -127,10 +135,10 @@ export default function CliGuide() {
         }))
         .filter((g) => g.items.length > 0),
     }));
-  }, [search]);
+  }, [publishedTools, search]);
 
   const activeTool = filteredTools.find((tool) => tool.id === activeTab) ?? filteredTools[0];
-  const originalTool = CLI_GUIDE_TOOLS.find((tool) => tool.id === activeTab)!;
+  const originalTool = publishedTools.find((tool) => tool.id === activeTab) ?? publishedTools[0];
 
   const totalCommands = originalTool.groups.reduce((sum, g) => sum + g.items.length, 0);
   const filteredCommands = activeTool?.groups.reduce((sum, g) => sum + g.items.length, 0) ?? 0;
@@ -148,7 +156,7 @@ export default function CliGuide() {
           setActiveTab(value);
           setSearch("");
         }}
-        tools={CLI_GUIDE_TOOLS}
+        tools={publishedTools}
       >
         <DocsRefreshPanel scope="cli" pageRoute="/cli-guide" vendorId={activeTab} />
 

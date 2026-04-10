@@ -220,8 +220,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
+    const rawBody = await req.json().catch(() => null);
+    const authHeader = req.headers.get("authorization") || "";
+    const tokenFromHeader = authHeader.startsWith("Bearer ")
+      ? authHeader.replace("Bearer ", "").trim()
+      : "";
+    const tokenFromBody = typeof rawBody?.access_token === "string"
+      ? rawBody.access_token.trim()
+      : "";
+    const token = tokenFromHeader || tokenFromBody;
+
+    if (!token) {
       return jsonResponse(req, 401, { success: false, message: "未授权" });
     }
 
@@ -232,7 +241,7 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: `Bearer ${token}` } },
     });
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -240,7 +249,7 @@ Deno.serve(async (req) => {
       return jsonResponse(req, 401, { success: false, message: "认证失败" });
     }
 
-    const requestBody = normalizeRequest(await req.json().catch(() => null));
+    const requestBody = normalizeRequest(rawBody);
     if (!requestBody) {
       return jsonResponse(req, 400, { success: false, message: "无效的刷新请求" });
     }

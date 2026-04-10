@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getDetailedErrorMessage } from "@/lib/errors";
 import { buildDocRefreshDiffItemView, buildDocRefreshRunView } from "./selectors";
 import type {
   DocRefreshDiffItemView,
@@ -40,9 +39,30 @@ export type ApplyDocRefreshDecisionInput = {
   action: DocRefreshReviewAction;
 };
 
+export type DocCatalogOverrideView = {
+  scope: DocRefreshScope;
+  vendorId: string;
+  entityKey: string;
+  overrideType: "upsert" | "delete";
+  payload: Record<string, unknown> | null;
+  updatedAt: string | null;
+};
+
 type DocRefreshSettingsRequest =
   | { action: "get" | "clear" }
   | { action: "save"; firecrawlKey: string };
+
+type ApplyDocRefreshDecisionRequest = {
+  itemId: string;
+  action: Exclude<DocRefreshReviewAction, "skip">;
+};
+
+type DocRefreshFunctionRequest =
+  | DocRefreshSettingsRequest
+  | TriggerDocRefreshInput
+  | ApplyDocRefreshDecisionRequest;
+
+type DocRefreshFunctionName = "doc-refresh-settings" | "doc-refresh-run" | "doc-refresh-apply";
 
 const EMPTY_SETTINGS: FirecrawlSettings = {
   firecrawlConfigured: false,
@@ -50,24 +70,120 @@ const EMPTY_SETTINGS: FirecrawlSettings = {
   firecrawlLastVerifiedAt: null,
 };
 
-async function throwInvokeError(error: unknown): Promise<never> {
-  throw new Error(await getDetailedErrorMessage(error));
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || "").trim().replace(/\/+$/, "");
+const SUPABASE_PUBLISHABLE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "").trim();
+
+function readFunctionErrorMessage(payload: unknown): string {
+  if (!payload || typeof payload !== "object") return "";
+  const source = payload as Record<string, unknown>;
+  const candidates: unknown[] = [
+    source.message,
+    source.error,
+    source.error_message,
+    source.reason,
+    typeof source.error === "object" && source.error !== null
+      ? (source.error as Record<string, unknown>).message
+      : undefined,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return "";
+}
+
+async function getAccessTokenOrThrow(): Promise<string> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  if (sessionData.session?.access_token) {
+    return sessionData.session.access_token;
+  }
+
+  const { data: refreshedData, error: refreshedError } = await supabase.auth.refreshSession();
+  if (refreshedError || !refreshedData.session?.access_token) {
+    await supabase.auth.signOut();
+    throw new Error("登录状态已失效，请重新登录后再试");
+  }
+
+  return refreshedData.session.access_token;
+}
+
+async function requestDocRefreshFunction<TResponse>(
+  fnName: DocRefreshFunctionName,
+  body: DocRefreshFunctionRequest,
+): Promise<TResponse> {
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    throw new Error("Supabase 未配置，请在环境变量中设置 VITE_SUPABASE_URL 和 VITE_SUPABASE_PUBLISHABLE_KEY");
+  }
+
+  const invoke = async (accessToken: string) => {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/${fnName}`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...body,
+        access_token: accessToken,
+      }),
+    });
+
+    const payload = await response.json().catch(() => null);
+    return { response, payload };
+  };
+
+  let accessToken = await getAccessTokenOrThrow();
+  let { response, payload } = await invoke(accessToken);
+
+  if (response.status === 401) {
+    const { data: refreshedData, error: refreshedError } = await supabase.auth.refreshSession();
+    if (refreshedError || !refreshedData.session?.access_token) {
+      await supabase.auth.signOut();
+      throw new Error("登录状态已失效，请重新登录后再试");
+    }
+
+    accessToken = refreshedData.session.access_token;
+    const retryResult = await invoke(accessToken);
+    response = retryResult.response;
+    payload = retryResult.payload;
+
+    if (response.status === 401) {
+      await supabase.auth.signOut();
+      throw new Error("登录状态已失效，请重新登录后再试");
+    }
+  }
+
+  if (!response.ok) {
+    const message = readFunctionErrorMessage(payload);
+    if (/invalid jwt|unauthorized|认证失败|未授权/i.test(message)) {
+      await supabase.auth.signOut();
+      throw new Error("登录状态已失效，请重新登录后再试");
+    }
+    throw new Error(message || `HTTP ${response.status}`);
+  }
+
+  return ((payload as TResponse | null | undefined) ?? null) as TResponse;
 }
 
 async function invokeDocRefreshSettings(body: DocRefreshSettingsRequest): Promise<FirecrawlSettings> {
-  const { data, error } = await supabase.functions.invoke("doc-refresh-settings", { body });
-  if (error) {
-    await throwInvokeError(error);
-  }
-  return (data as FirecrawlSettings | null | undefined) ?? EMPTY_SETTINGS;
+  const data = await requestDocRefreshFunction<FirecrawlSettings>("doc-refresh-settings", body);
+  return data ?? EMPTY_SETTINGS;
 }
 
 async function invokeDocRefreshRun(body: TriggerDocRefreshInput): Promise<TriggerDocRefreshResult> {
-  const { data, error } = await supabase.functions.invoke("doc-refresh-run", { body });
-  if (error) {
-    await throwInvokeError(error);
-  }
-  return data as TriggerDocRefreshResult;
+  return requestDocRefreshFunction<TriggerDocRefreshResult>("doc-refresh-run", body);
+}
+
+async function invokeDocRefreshApply(body: ApplyDocRefreshDecisionRequest): Promise<void> {
+  await requestDocRefreshFunction<{ success: boolean }>("doc-refresh-apply", body);
 }
 
 export function fetchDocRefreshSettings(): Promise<FirecrawlSettings> {
@@ -86,83 +202,25 @@ export function triggerDocRefresh(input: TriggerDocRefreshInput): Promise<Trigge
   return invokeDocRefreshRun(input);
 }
 
-function toEntityKey(payload: Record<string, unknown> | null, fallback: string): string {
-  const entityKey = payload?.entityKey;
-  return typeof entityKey === "string" && entityKey ? entityKey : fallback;
-}
+export async function fetchDocCatalogOverrides(scope: DocRefreshScope): Promise<DocCatalogOverrideView[]> {
+  const { data, error } = await supabase
+    .from("doc_catalog_overrides")
+    .select("scope, vendor_id, entity_key, override_type, payload, updated_at")
+    .eq("scope", scope)
+    .order("updated_at", { ascending: false });
 
-async function getCurrentUserId(): Promise<string> {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) {
-    throw error ?? new Error("未获取到当前用户");
-  }
-  return user.id;
-}
+  if (error) throw error;
 
-function buildOverrideRows(input: ApplyDocRefreshDecisionInput & { userId: string }) {
-  const candidateEntityKey = toEntityKey(input.item.candidatePayload, input.item.entityKey);
-  const baselineEntityKey = toEntityKey(input.item.baselinePayload, input.item.entityKey);
-
-  if (input.action === "replace_all") {
-    return [
-      {
-        scope: input.item.scope,
-        vendor_id: input.item.vendorId,
-        entity_key: candidateEntityKey,
-        override_type: "upsert",
-        payload: {
-          ...(input.item.candidatePayload ?? {}),
-          entityKey: candidateEntityKey,
-        },
-        source_run_id: input.item.runId,
-        applied_by: input.userId,
-      },
-    ];
-  }
-
-  if (input.action === "replace_similar") {
-    const rows = [
-      {
-        scope: input.item.scope,
-        vendor_id: input.item.vendorId,
-        entity_key: baselineEntityKey,
-        override_type: "delete",
-        payload: {},
-        source_run_id: input.item.runId,
-        applied_by: input.userId,
-      },
-      {
-        scope: input.item.scope,
-        vendor_id: input.item.vendorId,
-        entity_key: candidateEntityKey,
-        override_type: "upsert",
-        payload: {
-          ...(input.item.candidatePayload ?? {}),
-          entityKey: candidateEntityKey,
-        },
-        source_run_id: input.item.runId,
-        applied_by: input.userId,
-      },
-    ];
-
-    return baselineEntityKey === candidateEntityKey ? rows.slice(1) : rows;
-  }
-
-  if (input.action === "delete_old") {
-    return [
-      {
-        scope: input.item.scope,
-        vendor_id: input.item.vendorId,
-        entity_key: baselineEntityKey,
-        override_type: "delete",
-        payload: {},
-        source_run_id: input.item.runId,
-        applied_by: input.userId,
-      },
-    ];
-  }
-
-  return [];
+  return (data ?? []).map((row) => ({
+    scope: row.scope as DocRefreshScope,
+    vendorId: row.vendor_id,
+    entityKey: row.entity_key,
+    overrideType: row.override_type as "upsert" | "delete",
+    payload: row.payload && typeof row.payload === "object" && !Array.isArray(row.payload)
+      ? row.payload as Record<string, unknown>
+      : null,
+    updatedAt: row.updated_at,
+  }));
 }
 
 export async function fetchLatestDocRefreshRun(
@@ -216,27 +274,14 @@ export async function fetchDocRefreshDiffItems(runId: string): Promise<DocRefres
 }
 
 export async function applyDocRefreshDecision(input: ApplyDocRefreshDecisionInput): Promise<void> {
-  const userId = await getCurrentUserId();
-  const overrideRows = buildOverrideRows({ ...input, userId });
-
-  if (overrideRows.length > 0) {
-    const { error: overrideError } = await supabase
-      .from("doc_catalog_overrides")
-      .upsert(overrideRows, { onConflict: "scope,vendor_id,entity_key" });
-
-    if (overrideError) throw overrideError;
+  if (input.action === "skip") {
+    throw new Error("skip 不是可应用的差异动作");
   }
 
-  const { error } = await supabase
-    .from("doc_refresh_diff_items")
-    .update({
-      review_action: input.action,
-      review_status: "applied",
-      resolved_at: new Date().toISOString(),
-    })
-    .eq("id", input.item.id);
-
-  if (error) throw error;
+  await invokeDocRefreshApply({
+    itemId: input.item.id,
+    action: input.action,
+  });
 }
 
 export async function dismissDocRefreshDecision(itemId: string): Promise<void> {

@@ -71,8 +71,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
+    const body = await req.json().catch(() => null);
+    const authHeader = req.headers.get("authorization") || "";
+    const tokenFromHeader = authHeader.startsWith("Bearer ")
+      ? authHeader.replace("Bearer ", "").trim()
+      : "";
+    const tokenFromBody = typeof body?.access_token === "string"
+      ? body.access_token.trim()
+      : "";
+    const token = tokenFromHeader || tokenFromBody;
+
+    if (!token) {
       return jsonResponse(req, 401, { success: false, message: "未授权" });
     }
 
@@ -83,7 +92,7 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: `Bearer ${token}` } },
     });
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -91,7 +100,6 @@ Deno.serve(async (req) => {
       return jsonResponse(req, 401, { success: false, message: "认证失败" });
     }
 
-    const body = await req.json().catch(() => null);
     const action = typeof body?.action === "string" ? body.action : "";
 
     if (action === "get") {

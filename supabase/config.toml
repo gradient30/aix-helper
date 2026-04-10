@@ -7,10 +7,13 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.doc-refresh-settings]
-verify_jwt = true
+verify_jwt = false
 
 [functions.doc-refresh-run]
-verify_jwt = true
+verify_jwt = false
+
+[functions.doc-refresh-apply]
+verify_jwt = false
 
 [functions.invoke-model-api]
 verify_jwt = false

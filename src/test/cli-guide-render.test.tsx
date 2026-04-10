@@ -1,4 +1,4 @@
-﻿import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,6 +41,18 @@ vi.mock("@/features/docs-refresh/hooks", () => ({
   }),
   useDocRefreshDiffItems: () => ({
     data: [],
+    isLoading: false,
+  }),
+  useDocCatalogOverrides: () => ({
+    data: [
+      {
+        scope: "cli",
+        vendorId: "claude",
+        entityKey: "cli:claude:CLI 参数:--model",
+        overrideType: "delete",
+        payload: {},
+      },
+    ],
     isLoading: false,
   }),
   useTriggerDocRefresh: () => ({
@@ -86,5 +98,14 @@ describe("CliGuide", () => {
     expect(codexUrl.includes("github.com/openai/codex")).toBe(false);
     expect(geminiUrl.includes("github.com/google-gemini/gemini-cli")).toBe(false);
     expect(hrefs.every((href) => !href.includes("github.com/openai/codex"))).toBe(true);
+  });
+
+  it("hides deleted Claude CLI params after published overrides are applied", () => {
+    fireEvent.click(screen.getByRole("button", { name: "cliGuide.expandAll" }));
+
+    const panel = screen.getByRole("tabpanel", { name: "Claude Code" });
+
+    expect(within(panel).queryByText("--model")).not.toBeInTheDocument();
+    expect(within(panel).getByText("--permission-mode")).toBeInTheDocument();
   });
 });

@@ -1,10 +1,10 @@
-import { buildCliCommandEntityKey, buildGuideEntityKey } from "./entity-keys";
+import { buildCliCommandEntityKey, buildGuideEntityKey } from "./entity-keys.ts";
 import type {
   DocRefreshBaseEntity,
   DocRefreshDiffKind,
   DocRefreshDiffPair,
   DocRefreshDiffResult,
-} from "./types";
+} from "./types.ts";
 
 function getEntityKey(item: DocRefreshBaseEntity): string {
   return item.entityKey;
